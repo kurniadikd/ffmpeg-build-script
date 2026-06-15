@@ -38,6 +38,7 @@ jobs:
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: "latest"
           files: |
             dist/ffmpeg-linux-amd64.tar.gz
             dist/ffmpeg
@@ -78,6 +79,7 @@ jobs:
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: "latest"
           files: |
             dist/ffmpeg-windows-amd64.zip
             dist/ffmpeg.exe
