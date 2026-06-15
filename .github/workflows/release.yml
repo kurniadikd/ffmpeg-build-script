@@ -1,0 +1,86 @@
+name: Build and Release FFmpeg (Non-Free)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux Static FFmpeg
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl git cmake python3 ca-certificates
+
+      - name: Build static FFmpeg
+        run: |
+          # Run compilation script non-interactively
+          SKIPINSTALL=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+
+      - name: Prepare assets
+        run: |
+          mkdir -p dist
+          cp workspace/bin/ffmpeg dist/ffmpeg
+          cp workspace/bin/ffprobe dist/ffprobe
+          cd dist
+          tar -czvf ffmpeg-linux-amd64.tar.gz ffmpeg ffprobe
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ffmpeg-linux-amd64.tar.gz
+            dist/ffmpeg
+            dist/ffprobe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    name: Build Windows Static FFmpeg
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cross-compile dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion git make gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 yasm nasm texinfo autoconf libtool bison flex cvs pkg-config cmake libtool-bin autopoint gettext zip
+
+      - name: Clone Windows Build Helpers
+        run: git clone https://github.com/rdp/ffmpeg-windows-build-helpers.git /tmp/w-build
+
+      - name: Build static FFmpeg for Windows
+        run: |
+          cd /tmp/w-build
+          # Run cross-compile script for 64-bit Windows, nonfree
+          # --sandbox-ok=yes is needed to run inside container environments
+          ./cross_compile_ffmpeg.sh --compiler-flavors=win64 --build-ffmpeg-static=yes --enable-gpl=yes --enable-nonfree=yes --sandbox-ok=yes
+
+      - name: Prepare assets
+        run: |
+          mkdir -p dist
+          cp /tmp/w-build/sandbox/win64/ffmpeg/ffmpeg.exe dist/ffmpeg.exe
+          cp /tmp/w-build/sandbox/win64/ffmpeg/ffprobe.exe dist/ffprobe.exe
+          cd dist
+          zip ffmpeg-windows-amd64.zip ffmpeg.exe ffprobe.exe
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ffmpeg-windows-amd64.zip
+            dist/ffmpeg.exe
+            dist/ffprobe.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
