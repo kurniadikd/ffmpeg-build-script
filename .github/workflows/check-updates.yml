@@ -39,11 +39,3 @@ jobs:
           git add build-ffmpeg
           git commit -m "Auto-update library versions (FFmpeg / SVT-AV1 / FDK-AAC)"
           git push origin master
-
-      - name: Trigger Build & Release
-        if: steps.check.outputs.updated == 'true'
-        run: |
-          # Trigger the compilation and release workflow (release.yml)
-          gh workflow run release.yml --repo ${{ github.repository }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

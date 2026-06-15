@@ -5,6 +5,10 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_run:
+    workflows: ["Check Codec Updates"]
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -12,6 +16,12 @@ permissions:
 jobs:
   build-linux:
     name: Build Linux Static FFmpeg
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && 
+       github.event.workflow_run.conclusion == 'success' && 
+       contains(github.event.workflow_run.head_commit.message, 'Auto-update library versions'))
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -48,6 +58,12 @@ jobs:
 
   build-windows:
     name: Build Windows Static FFmpeg
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && 
+       github.event.workflow_run.conclusion == 'success' && 
+       contains(github.event.workflow_run.head_commit.message, 'Auto-update library versions'))
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
