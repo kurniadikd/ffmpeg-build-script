@@ -1,39 +1,51 @@
 import urllib.request
 import json
 import re
+import urllib.parse
 from pathlib import Path
 
 def get_latest_github_tag(repo):
-    url = f"https://api.github.com/repos/{repo}/tags"
+    # Fetch 100 tags to get a wide selection of recent releases
+    url = f"https://api.github.com/repos/{repo}/tags?per_page=100"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         with urllib.request.urlopen(req) as response:
             tags = json.loads(response.read().decode())
-            # Find the latest stable clean version tag
+            valid_versions = []
             for t in tags:
                 name = t['name']
                 # Strip prefix 'v' or 'n' (e.g., v2.0.3 -> 2.0.3, n7.1 -> 7.1)
                 clean_name = re.sub(r'^[vn]', '', name)
                 # Verify it matches semantic version numbers (e.g. 2.0.3 or 8.1)
                 if re.match(r'^\d+\.\d+(\.\d+)?$', clean_name):
-                    return clean_name
+                    valid_versions.append(clean_name)
+            
+            if valid_versions:
+                # Sort semantically (e.g. 8.1.1 > 8.1 > 0.6.1)
+                valid_versions.sort(key=lambda s: [int(x) for x in re.findall(r'\d+', s)])
+                return valid_versions[-1] # Return the highest version
     except Exception as e:
         print(f"Error fetching GitHub tags for {repo}: {e}")
     return None
 
 def get_latest_gitlab_release(repo_path):
-    # GitLab API accepts URL-encoded repository path (e.g., AOMediaCodec/SVT-AV1 -> AOMediaCodec%2FSVT-AV1)
     encoded_path = urllib.parse.quote_plus(repo_path)
-    url = f"https://gitlab.com/api/v4/projects/{encoded_path}/releases"
+    url = f"https://gitlab.com/api/v4/projects/{encoded_path}/releases?per_page=50"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         with urllib.request.urlopen(req) as response:
             releases = json.loads(response.read().decode())
-            if releases:
-                name = releases[0]['tag_name']
+            valid_versions = []
+            for r in releases:
+                name = r['tag_name']
                 clean_name = re.sub(r'^[vn]', '', name)
                 if re.match(r'^\d+\.\d+(\.\d+)?$', clean_name):
-                    return clean_name
+                    valid_versions.append(clean_name)
+            
+            if valid_versions:
+                # Sort semantically
+                valid_versions.sort(key=lambda s: [int(x) for x in re.findall(r'\d+', s)])
+                return valid_versions[-1] # Return the highest version
     except Exception as e:
         print(f"Error fetching GitLab releases for {repo_path}: {e}")
     return None
@@ -49,13 +61,13 @@ def main():
 
     # 1. Fetch latest versions
     latest_ffmpeg = get_latest_github_tag("FFmpeg/FFmpeg")
-    print(f"Latest FFmpeg Version available: {latest_ffmpeg}")
+    print(f"Latest FFmpeg Version resolved: {latest_ffmpeg}")
     
     latest_svtav1 = get_latest_gitlab_release("AOMediaCodec/SVT-AV1")
-    print(f"Latest SVT-AV1 Version available: {latest_svtav1}")
+    print(f"Latest SVT-AV1 Version resolved: {latest_svtav1}")
 
     latest_fdk = get_latest_github_tag("mstorsjo/fdk-aac")
-    print(f"Latest FDK-AAC Version available: {latest_fdk}")
+    print(f"Latest FDK-AAC Version resolved: {latest_fdk}")
 
     # 2. Check and replace FFmpeg version
     if latest_ffmpeg:
