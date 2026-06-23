@@ -868,6 +868,12 @@ if build "libvmaf" "3.0.0"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libvmaf")
 
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  EXTRALIBS="${EXTRALIBS} -lc++"
+else
+  EXTRALIBS="${EXTRALIBS} -lstdc++"
+fi
+
 ##
 ## audio library
 ##
