@@ -860,7 +860,7 @@ CONFIGURE_OPTIONS+=("--enable-libzimg")
 
 if build "libvmaf" "3.0.0"; then
   download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
-  cd "vmaf-$CURRENT_PACKAGE_VERSION/libvmaf" || exit
+  cd "libvmaf" || exit
   execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
   execute ninja -C build
   execute ninja -C build install
