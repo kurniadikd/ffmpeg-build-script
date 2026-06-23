@@ -23,7 +23,7 @@ RUN mkdir -p /code && \
     git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples
 
 # Build deviceQuery in its original location where it can find dependencies
-WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
+WORKDIR /code/cuda-samples/cpp/1_Utilities/deviceQuery
 RUN nvcc -I/code/cuda-samples/Common -I/code/cuda-samples/Common/inc deviceQuery.cpp -o deviceQuery && \
     cp deviceQuery /usr/local/bin/ && \
     cd /code && \
