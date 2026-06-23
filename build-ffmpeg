@@ -1275,7 +1275,7 @@ build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 
-execute ./configure "${CONFIGURE_OPTIONS[@]}" \
+if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-shared \
   --enable-pthreads \
@@ -1288,7 +1288,15 @@ execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
   --prefix="${WORKSPACE}" \
-  --extra-version="${EXTRA_VERSION}"
+  --extra-version="${EXTRA_VERSION}" >configure.log 2>&1; then
+    cat configure.log
+    if [ -f ffbuild/config.log ]; then
+      echo "=== CONFIG.LOG ==="
+      tail -n 100 ffbuild/config.log
+    fi
+    echo "Failed to Execute ./configure" >&2
+    exit 1
+fi
 
 execute make -j "$MJOBS"
 execute make install
