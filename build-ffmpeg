@@ -1070,7 +1070,7 @@ if build "libjxl" "0.11.2"; then
   sed 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g' lib/jxl_threads.cmake >lib/jxl_threads.cmake.patched
   rm lib/jxl_threads.cmake
   mv lib/jxl_threads.cmake.patched lib/jxl_threads.cmake
-  sed 's|.*third_party/skcms.*|# skipped skcms|g' deps.sh > deps.sh.patched
+  sed -e 's|.*third_party/skcms.*|# skipped skcms|g' -e 's|.*skia.googlesource.com/skcms.*|# skipped url|g' deps.sh > deps.sh.patched
   mv deps.sh.patched deps.sh
   chmod +x deps.sh
   execute ./deps.sh
