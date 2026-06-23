@@ -168,7 +168,7 @@ download() {
         sleep 10
       fi
 
-      curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+      curl -L --fail --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
       EXITCODE=$?
 
       if [ $EXITCODE -eq 0 ] && [ -s "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
@@ -805,7 +805,7 @@ if $NONFREE_AND_GPL; then
           sleep 10
         fi
 
-        curl -L --silent -o "$PATCH_FILE" "$PATCH_URL"
+        curl -L --fail --silent -o "$PATCH_FILE" "$PATCH_URL"
         if [ $? -eq 0 ] && [ -s "$PATCH_FILE" ]; then
           SUCCESS=true
           break
@@ -831,13 +831,13 @@ if $NONFREE_AND_GPL; then
 fi
 
 if build "av1" "3.12.0"; then
-  download "https://aomedia.googlesource.com/aom/+archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "av1-$CURRENT_PACKAGE_VERSION.tar.gz" "av1"
+  download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_SILICON; then
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
   else
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
   fi
   execute make -j "$MJOBS"
   execute make install
