@@ -26,7 +26,7 @@ RUN mkdir -p /code && \
 
 # Build deviceQuery in its original location where it can find dependencies
 WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
-RUN make -j$(nproc) && \
+RUN nvcc -I/code/cuda-samples/Common -I/code/cuda-samples/Common/inc deviceQuery.cpp -o deviceQuery && \
     cp deviceQuery /usr/local/bin/ && \
     cd /code && \
     rm -rf cuda-samples
