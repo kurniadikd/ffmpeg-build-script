@@ -169,7 +169,7 @@ download() {
         sleep 10
       fi
 
-      curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+      curl -L --fail --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
       EXITCODE=$?
 
       if [ $EXITCODE -eq 0 ] && [ -s "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
@@ -527,7 +527,7 @@ if build "autoconf" "2.72"; then
   build_done "autoconf" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "automake" "1.18.1"; then
+if build "automake" "1.17"; then
   download "https://ftpmirror.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j "$MJOBS"
