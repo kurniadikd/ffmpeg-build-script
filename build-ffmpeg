@@ -499,45 +499,55 @@ if build "zlib" "1.3.2"; then
   build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "m4" "1.4.20"; then
-  download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "m4" $CURRENT_PACKAGE_VERSION
+if ! command_exists "m4"; then
+  if build "m4" "1.4.20"; then
+    download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "m4" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "autoconf" "2.72"; then
-  download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "autoconf" $CURRENT_PACKAGE_VERSION
+if ! command_exists "autoconf"; then
+  if build "autoconf" "2.72"; then
+    download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "autoconf" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "automake" "1.18.1"; then
-  download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "automake" $CURRENT_PACKAGE_VERSION
+if ! command_exists "automake"; then
+  if build "automake" "1.18.1"; then
+    download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "automake" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "libtool" "2.5.4"; then
-  download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "libtool" $CURRENT_PACKAGE_VERSION
-fi
-
-if $NONFREE_AND_GPL; then
-  if build "gettext" "1.0"; then
-    download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
+if ! command_exists "libtoolize" && ! command_exists "glibtoolize"; then
+  if build "libtool" "2.5.4"; then
+    download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
     execute make -j "$MJOBS"
     execute make install
-    build_done "gettext" $CURRENT_PACKAGE_VERSION
+    build_done "libtool" $CURRENT_PACKAGE_VERSION
+  fi
+fi
+
+if $NONFREE_AND_GPL; then
+  if ! command_exists "gettext"; then
+    if build "gettext" "1.0"; then
+      download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "gettext" $CURRENT_PACKAGE_VERSION
+    fi
   fi
 
   if build "openssl" "3.6.1"; then
