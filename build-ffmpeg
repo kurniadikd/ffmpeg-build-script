@@ -499,7 +499,7 @@ if build "zlib" "1.3.2"; then
   build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
-if ! command_exists "m4"; then
+if ! command_exists "m4" || ! m4 --version 2>&1 | grep -iq "GNU"; then
   if build "m4" "1.4.20"; then
     download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
