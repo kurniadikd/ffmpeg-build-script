@@ -20,15 +20,11 @@ RUN update-ca-certificates
 
 # Install NVIDIA CUDA samples to get deviceQuery
 RUN mkdir -p /code && \
-    git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
-    cd /code/cuda-samples && \
-    git sparse-checkout set Samples/1_Utilities/deviceQuery Common cmake
+    git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples
 
 # Build deviceQuery in its original location where it can find dependencies
-WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
-RUN mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
+WORKDIR /code/cuda-samples/cpp/1_Utilities/deviceQuery
+RUN nvcc -I/code/cuda-samples/Common -I/code/cuda-samples/Common/inc deviceQuery.cpp -o deviceQuery && \
     cp deviceQuery /usr/local/bin/ && \
     cd /code && \
     rm -rf cuda-samples

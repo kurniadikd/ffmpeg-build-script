@@ -168,7 +168,7 @@ download() {
         sleep 10
       fi
 
-      curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+      curl -L --fail --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
       EXITCODE=$?
 
       if [ $EXITCODE -eq 0 ] && [ -s "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
@@ -499,45 +499,66 @@ if build "zlib" "1.3.2"; then
   build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "m4" "1.4.20"; then
-  download "https://ftpmirror.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "m4" $CURRENT_PACKAGE_VERSION
+if ! command_exists "m4" || ! m4 --version >/dev/null 2>&1 || ! version_satisfies "$(m4 --version 2>&1 | head -n 1 | awk '{print $NF}')" "1.4.8"; then
+  if build "m4" "1.4.20"; then
+    download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "m4" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "autoconf" "2.72"; then
-  download "https://ftpmirror.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "autoconf" $CURRENT_PACKAGE_VERSION
+if ! command_exists "autoconf" || ! autoconf --version >/dev/null 2>&1; then
+  if build "autoconf" "2.72"; then
+    download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "autoconf" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "automake" "1.18.1"; then
-  download "https://ftpmirror.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "automake" $CURRENT_PACKAGE_VERSION
+if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
+  if build "automake" "1.18.1"; then
+    download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "automake" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
-if build "libtool" "2.5.4"; then
-  download "https://ftpmirror.gnu.org/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "libtool" $CURRENT_PACKAGE_VERSION
-fi
-
-if $NONFREE_AND_GPL; then
-  if build "gettext" "1.0"; then
-    download "https://ftpmirror.gnu.org/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
+if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } && { ! command_exists "glibtoolize" || ! glibtoolize --version >/dev/null 2>&1; }; then
+  if build "libtool" "2.5.4"; then
+    download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
     execute make -j "$MJOBS"
     execute make install
-    build_done "gettext" $CURRENT_PACKAGE_VERSION
+    build_done "libtool" $CURRENT_PACKAGE_VERSION
+  fi
+else
+  mkdir -p "${WORKSPACE}/bin"
+  if command_exists "libtoolize"; then
+    ln -sf "$(which libtoolize)" "${WORKSPACE}/bin/libtoolize"
+  elif command_exists "glibtoolize"; then
+    ln -sf "$(which glibtoolize)" "${WORKSPACE}/bin/libtoolize"
+  fi
+fi
+
+if $NONFREE_AND_GPL; then
+  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || ! command_exists "autopoint" || ! autopoint --version >/dev/null 2>&1; then
+    if build "gettext" "1.0"; then
+      download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "gettext" $CURRENT_PACKAGE_VERSION
+    fi
+  else
+    mkdir -p "${WORKSPACE}/bin"
+    ln -sf "$(which gettext)" "${WORKSPACE}/bin/gettext"
+    ln -sf "$(which autopoint)" "${WORKSPACE}/bin/autopoint"
   fi
 
   if build "openssl" "3.6.1"; then
@@ -550,7 +571,7 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
   if build "gmp" "6.3.0"; then
-    download "https://ftpmirror.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
+    download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j "$MJOBS"
     execute make install
@@ -558,7 +579,7 @@ else
   fi
 
   if build "nettle" "3.10.2"; then
-    download "https://ftpmirror.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
+    download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j "$MJOBS"
     execute make install
@@ -805,7 +826,7 @@ if $NONFREE_AND_GPL; then
           sleep 10
         fi
 
-        curl -L --silent -o "$PATCH_FILE" "$PATCH_URL"
+        curl -L --fail --silent -o "$PATCH_FILE" "$PATCH_URL"
         if [ $? -eq 0 ] && [ -s "$PATCH_FILE" ]; then
           SUCCESS=true
           break
@@ -831,13 +852,13 @@ if $NONFREE_AND_GPL; then
 fi
 
 if build "av1" "3.12.0"; then
-  download "https://aomedia.googlesource.com/aom/+archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "av1-$CURRENT_PACKAGE_VERSION.tar.gz" "av1"
+  download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_SILICON; then
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
   else
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
   fi
   execute make -j "$MJOBS"
   execute make install
@@ -857,6 +878,22 @@ if build "zimg" "3.0.6"; then
   build_done "zimg" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
+
+if build "libvmaf" "3.0.0"; then
+  download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
+  cd "libvmaf" || exit
+  execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
+  execute ninja -C build
+  execute ninja -C build install
+  build_done "libvmaf" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libvmaf")
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  EXTRALIBS="${EXTRALIBS} -lc++"
+else
+  EXTRALIBS="${EXTRALIBS} -lstdc++"
+fi
 
 ##
 ## audio library
@@ -1054,6 +1091,9 @@ if build "libjxl" "0.11.2"; then
   sed 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g' lib/jxl_threads.cmake >lib/jxl_threads.cmake.patched
   rm lib/jxl_threads.cmake
   mv lib/jxl_threads.cmake.patched lib/jxl_threads.cmake
+  sed -e 's|.*third_party/skcms.*|# skipped skcms|g' -e 's|.*skia.googlesource.com/skcms.*|# skipped url|g' deps.sh > deps.sh.patched
+  mv deps.sh.patched deps.sh
+  chmod +x deps.sh
   execute ./deps.sh
   execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=off -DENABLE_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_DOXYGEN=OFF -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF -DJPEGXL_ENABLE_JPEGLI=ON -DJPEGXL_TEST_TOOLS=OFF -DJPEGXL_ENABLE_JNI=OFF -DBUILD_TESTING=OFF -DJPEGXL_ENABLE_SKCMS=OFF .
   execute make -j "$MJOBS"
@@ -1265,7 +1305,7 @@ build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 
-execute ./configure "${CONFIGURE_OPTIONS[@]}" \
+if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-shared \
   --enable-pthreads \
@@ -1278,7 +1318,15 @@ execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
   --prefix="${WORKSPACE}" \
-  --extra-version="${EXTRA_VERSION}"
+  --extra-version="${EXTRA_VERSION}" >configure.log 2>&1; then
+    cat configure.log
+    if [ -f ffbuild/config.log ]; then
+      echo "=== CONFIG.LOG ==="
+      tail -n 100 ffbuild/config.log
+    fi
+    echo "Failed to Execute ./configure" >&2
+    exit 1
+fi
 
 execute make -j "$MJOBS"
 execute make install
