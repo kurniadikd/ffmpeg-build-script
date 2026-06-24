@@ -42,6 +42,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug m4
+        run: |
+          echo "=== Debugging m4 ==="
+          which -a m4 || true
+          m4 --version 2>&1 || true
+          echo "exit code of m4 --version: $?"
+          echo "===================="
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
