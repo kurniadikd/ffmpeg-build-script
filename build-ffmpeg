@@ -537,6 +537,13 @@ if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } 
     execute make install
     build_done "libtool" $CURRENT_PACKAGE_VERSION
   fi
+else
+  mkdir -p "${WORKSPACE}/bin"
+  if command_exists "libtoolize"; then
+    ln -sf "$(which libtoolize)" "${WORKSPACE}/bin/libtoolize"
+  elif command_exists "glibtoolize"; then
+    ln -sf "$(which glibtoolize)" "${WORKSPACE}/bin/libtoolize"
+  fi
 fi
 
 if $NONFREE_AND_GPL; then
