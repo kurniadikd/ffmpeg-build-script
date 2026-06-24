@@ -11,7 +11,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 RUN apt-get update
 # Install required packages
 RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 cmake \
-    python3 python-is-python3 ninja-build meson git curl
+    python3 python-is-python3 ninja-build meson git patch
 # Clean up package cache and temporary files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && find /var/log -type f -delete
 # Update CA certificates

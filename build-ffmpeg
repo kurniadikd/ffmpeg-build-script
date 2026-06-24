@@ -770,6 +770,21 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
+if $NONFREE_AND_GPL; then
+  if [[ "$(uname -m)" == "x86_64" ]]; then
+    if build "svthevc" "1.5.0"; then
+      download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
+      make_dir build
+      cd build || exit
+      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "svthevc" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libsvthevc")
+  fi
+fi
+
 if build "libvpx" "1.16.0"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
@@ -1304,6 +1319,18 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
+
+if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtHevcEnc.pc" ]]; then
+  if [[ ! -f "libavcodec/libsvt_hevc.c" ]]; then
+    if ! command_exists "patch"; then
+      echo "Error: patch command not found, cannot apply SVT-HEVC patch." >&2
+      exit 1
+    fi
+    echo "Applying SVT-HEVC patch to FFmpeg..."
+    download "https://aur.archlinux.org/cgit/aur.git/plain/010-ffmpeg-add-svt-hevc.patch?h=ffmpeg-full" "010-ffmpeg-add-svt-hevc.patch"
+    execute patch -p1 < "$PACKAGES/010-ffmpeg-add-svt-hevc.patch"
+  fi
+fi
 
 if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \

@@ -6,7 +6,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 \
-    python-is-python3 ninja-build meson git \
+    python-is-python3 ninja-build meson git patch \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
