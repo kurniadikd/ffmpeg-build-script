@@ -499,7 +499,7 @@ if build "zlib" "1.3.2"; then
   build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
-if ! command_exists "m4" || ! m4 --version 2>&1 | grep -iq "GNU"; then
+if ! command_exists "m4" || ! m4 --version >/dev/null 2>&1; then
   if build "m4" "1.4.20"; then
     download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
@@ -509,7 +509,7 @@ if ! command_exists "m4" || ! m4 --version 2>&1 | grep -iq "GNU"; then
   fi
 fi
 
-if ! command_exists "autoconf"; then
+if ! command_exists "autoconf" || ! autoconf --version >/dev/null 2>&1; then
   if build "autoconf" "2.72"; then
     download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
@@ -519,7 +519,7 @@ if ! command_exists "autoconf"; then
   fi
 fi
 
-if ! command_exists "automake"; then
+if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
   if build "automake" "1.18.1"; then
     download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
@@ -529,7 +529,7 @@ if ! command_exists "automake"; then
   fi
 fi
 
-if ! command_exists "libtoolize" && ! command_exists "glibtoolize"; then
+if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } && { ! command_exists "glibtoolize" || ! glibtoolize --version >/dev/null 2>&1; }; then
   if build "libtool" "2.5.4"; then
     download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -540,7 +540,7 @@ if ! command_exists "libtoolize" && ! command_exists "glibtoolize"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if ! command_exists "gettext"; then
+  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1; then
     if build "gettext" "1.0"; then
       download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
