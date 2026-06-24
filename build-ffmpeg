@@ -547,7 +547,7 @@ else
 fi
 
 if $NONFREE_AND_GPL; then
-  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1; then
+  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || ! command_exists "autopoint" || ! autopoint --version >/dev/null 2>&1; then
     if build "gettext" "1.0"; then
       download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -555,6 +555,10 @@ if $NONFREE_AND_GPL; then
       execute make install
       build_done "gettext" $CURRENT_PACKAGE_VERSION
     fi
+  else
+    mkdir -p "${WORKSPACE}/bin"
+    ln -sf "$(which gettext)" "${WORKSPACE}/bin/gettext"
+    ln -sf "$(which autopoint)" "${WORKSPACE}/bin/autopoint"
   fi
 
   if build "openssl" "3.6.1"; then
