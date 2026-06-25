@@ -561,7 +561,7 @@ if $NONFREE_AND_GPL; then
     ln -sf "$(which autopoint)" "${WORKSPACE}/bin/autopoint"
   fi
 
-  if build "openssl" "3.6.1"; then
+  if build "openssl" "4.0.1"; then
     download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
     execute make -j "$MJOBS"
@@ -772,7 +772,7 @@ fi
 
 if $NONFREE_AND_GPL; then
   if [[ "$(uname -m)" == "x86_64" ]]; then
-    if build "svthevc" "1.5.0"; then
+    if build "svthevc" "1.5.1"; then
       download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
       cd build || exit
@@ -866,7 +866,7 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "3.12.0"; then
+if build "av1" "3.14.1"; then
   download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
@@ -894,7 +894,7 @@ if build "zimg" "3.0.6"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
 
-if build "libvmaf" "3.0.0"; then
+if build "libvmaf" "3.2.0"; then
   download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "libvmaf" || exit
   execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
@@ -930,7 +930,7 @@ if ! $DISABLE_LV2 ; then
         download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
         build_done "waflib" $CURRENT_PACKAGE_VERSION
       fi
-      if build "serd" "0.32.8"; then
+      if build "serd" "0.32.10"; then
         download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -944,7 +944,7 @@ if ! $DISABLE_LV2 ; then
         execute make install
         build_done "pcre" $CURRENT_PACKAGE_VERSION
       fi
-      if build "zix" "0.8.0"; then
+      if build "zix" "0.8.2"; then
         download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         cd build || exit
@@ -967,7 +967,7 @@ if ! $DISABLE_LV2 ; then
         execute ninja -C build install
         build_done "sratom" $CURRENT_PACKAGE_VERSION
       fi
-      if build "lilv" "0.26.4"; then
+      if build "lilv" "0.28.0"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
@@ -1089,7 +1089,7 @@ if build "libpng" "1.6.55"; then
   build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "lcms2" "2.18"; then
+if build "lcms2" "2.19.1"; then
   download "https://github.com/mm2/Little-CMS/releases/download/lcms$CURRENT_PACKAGE_VERSION/lcms2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j "$MJOBS"
@@ -1136,7 +1136,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if build "libsdl" "2.30.12"; then
+if build "libsdl" "2.32.10"; then
   download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j "$MJOBS"
@@ -1167,7 +1167,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-vapoursynth")
 
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.5.4"; then
+  if build "srt" "1.5.5"; then
     download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
     export OPENSSL_ROOT_DIR="${WORKSPACE}"
     export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
@@ -1228,7 +1228,7 @@ CONFIGURE_OPTIONS+=("--enable-vulkan")
 
 # vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
 if command_exists "python3"; then
-  if build "glslang" "16.2.0"; then
+  if build "glslang" "16.3.0"; then
     download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./update_glslang_sources.py
     execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
@@ -1277,7 +1277,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.5.0"; then
+  if build "amf" "1.5.2"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"

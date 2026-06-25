@@ -31,6 +31,11 @@ jobs:
       - name: test run ffmepg
         run: |
           ./workspace/bin/ffmpeg -buildconf
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-linux
+          path: workspace/bin/
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -60,6 +65,11 @@ jobs:
       - name: test run ffmepg
         run: |
           ./workspace/bin/ffmpeg -buildconf
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-macos
+          path: workspace/bin/
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -85,6 +95,14 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:ubuntu -buildconf
+      - name: save docker image
+        run: |
+          docker save ffmpeg:ubuntu | gzip > ffmpeg-ubuntu.tar.gz
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-docker-ubuntu
+          path: ffmpeg-ubuntu.tar.gz
 
   build-cuda-ubuntu-docker:
     name: build in ubuntu docker with cuda
@@ -113,6 +131,14 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:cuda-ubuntu -buildconf
+      - name: save docker image
+        run: |
+          docker save ffmpeg:cuda-ubuntu | gzip > ffmpeg-cuda-ubuntu.tar.gz
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-docker-cuda-ubuntu
+          path: ffmpeg-cuda-ubuntu.tar.gz
 
   build-full-static:
     name: full static build in docker
@@ -135,3 +161,11 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:cuda-static -buildconf
+      - name: save docker image
+        run: |
+          docker save ffmpeg:cuda-static | gzip > ffmpeg-cuda-static.tar.gz
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-docker-cuda-static
+          path: ffmpeg-cuda-static.tar.gz

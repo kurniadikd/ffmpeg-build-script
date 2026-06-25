@@ -22,6 +22,8 @@ jobs:
 
       - name: Run Update Checker
         id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python check_updates.py > output.log
           cat output.log
@@ -37,5 +39,5 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add build-ffmpeg
-          git commit -m "Auto-update library versions (FFmpeg / SVT-AV1 / FDK-AAC)"
+          git commit -m "Auto-update library versions"
           git push origin master
