@@ -169,3 +169,44 @@ jobs:
         with:
           name: ffmpeg-docker-cuda-static
           path: ffmpeg-cuda-static.tar.gz
+
+  build-windows:
+    name: build in Windows (MSYS2)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-pkg-config
+            make
+            git
+            curl
+            unzip
+            python
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: build ffmpeg
+        run: |
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+
+      - name: test run ffmpeg
+        run: |
+          ./workspace/bin/ffmpeg.exe -buildconf
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-windows
+          path: workspace/bin/*.exe
