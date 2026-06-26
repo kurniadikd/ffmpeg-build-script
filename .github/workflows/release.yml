@@ -1,10 +1,12 @@
-name: Build and Release FFmpeg (Non-Free)
+name: Build and Release FFmpeg
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [master]
+    paths-ignore:
+      - '*.md'
+      - '.mimocode/**'
   workflow_run:
     workflows: ["Check Codec Updates"]
     types:
@@ -15,14 +17,12 @@ permissions:
 
 jobs:
   build-linux:
-    name: Build Linux Static FFmpeg
+    name: Build Linux
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' && 
-       github.event.workflow_run.conclusion == 'success' && 
-       contains(github.event.workflow_run.head_commit.message, 'Auto-update library versions'))
-    runs-on: ubuntu-22.04
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,75 +30,166 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential curl git cmake python3 ca-certificates
+          sudo apt-get install -y libva-dev
 
-      - name: Build static FFmpeg
+      - name: Build FFmpeg
         run: |
-          # Run compilation script non-interactively
-          SKIPINSTALL=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
 
-      - name: Prepare assets
+      - name: Test FFmpeg
+        run: |
+          ./workspace/bin/ffmpeg -buildconf
+
+      - name: Prepare release assets
         run: |
           mkdir -p dist
-          cp workspace/bin/ffmpeg dist/ffmpeg
-          cp workspace/bin/ffprobe dist/ffprobe
+          cp workspace/bin/ffmpeg dist/
+          cp workspace/bin/ffprobe dist/
+          cp workspace/bin/ffplay dist/ || true
           cd dist
           tar -czvf ffmpeg-linux-amd64.tar.gz ffmpeg ffprobe
 
-      - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: "latest"
-          files: |
-            dist/ffmpeg-linux-amd64.tar.gz
-            dist/ffmpeg
-            dist/ffprobe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: release-linux
+          path: dist/
 
-  build-windows:
-    name: Build Windows Static FFmpeg
+  build-macos:
+    name: Build macOS
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' && 
-       github.event.workflow_run.conclusion == 'success' && 
-       contains(github.event.workflow_run.head_commit.message, 'Auto-update library versions'))
-    runs-on: ubuntu-22.04
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: macos-15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install cross-compile dependencies
+      - name: Build FFmpeg
         run: |
-          sudo apt-get update
-          sudo apt-get install -y subversion git make gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 yasm nasm texinfo autoconf libtool bison flex cvs pkg-config cmake libtool-bin autopoint gettext zip
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
 
-      - name: Clone Windows Build Helpers
-        run: git clone https://github.com/rdp/ffmpeg-windows-build-helpers.git /tmp/w-build
-
-      - name: Build static FFmpeg for Windows
+      - name: Test FFmpeg
         run: |
-          cd /tmp/w-build
-          # Run cross-compile script for 64-bit Windows, nonfree
-          # --sandbox-ok=yes is needed to run inside container environments
-          ./cross_compile_ffmpeg.sh --compiler-flavors=win64 --build-ffmpeg-static=yes --enable-gpl=yes --enable-nonfree=yes --sandbox-ok=yes
+          ./workspace/bin/ffmpeg -buildconf
 
-      - name: Prepare assets
+      - name: Prepare release assets
         run: |
           mkdir -p dist
-          cp /tmp/w-build/sandbox/win64/ffmpeg/ffmpeg.exe dist/ffmpeg.exe
-          cp /tmp/w-build/sandbox/win64/ffmpeg/ffprobe.exe dist/ffprobe.exe
+          cp workspace/bin/ffmpeg dist/
+          cp workspace/bin/ffprobe dist/
+          cp workspace/bin/ffplay dist/ || true
           cd dist
-          zip ffmpeg-windows-amd64.zip ffmpeg.exe ffprobe.exe
+          tar -czvf ffmpeg-macos-universal.tar.gz ffmpeg ffprobe
 
-      - name: Create Release and Upload Assets
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: dist/
+
+  build-windows:
+    name: Build Windows (MSYS2)
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-pkg-config
+            make
+            git
+            curl
+            unzip
+            python
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build FFmpeg
+        run: |
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+
+      - name: Test FFmpeg
+        run: |
+          ./workspace/bin/ffmpeg.exe -buildconf
+
+      - name: Prepare release assets
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist
+          cp workspace/bin/ffmpeg.exe dist/
+          cp workspace/bin/ffprobe.exe dist/
+          cp workspace/bin/ffplay.exe dist/ || true
+          cd dist
+          7z a ffmpeg-windows-amd64.zip ffmpeg.exe ffprobe.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist/
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-linux, build-macos, build-windows]
+    if: always() && (needs.build-linux.result == 'success' || needs.build-macos.result == 'success' || needs.build-windows.result == 'success')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List release files
+        run: find artifacts/ -type f
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "latest"
+          name: "FFmpeg Build (latest)"
+          body: |
+            ## Automated Build
+
+            This release is automatically updated on every push to master.
+
+            ### Included Libraries
+            - FFmpeg 8.1.2 with SVT-HEVC, SVT-AV1, x264, x265, libvmaf, and more
+            - See build-ffmpeg for full list
+
+            ### Available Files
+            - `ffmpeg-linux-amd64.tar.gz` - Linux x86_64
+            - `ffmpeg-macos-universal.tar.gz` - macOS
+            - `ffmpeg-windows-amd64.zip` - Windows x86_64
+
+            ### Usage
+            ```bash
+            # Linux/macOS
+            tar xzf ffmpeg-linux-amd64.tar.gz
+            ./ffmpeg -i input.mp4 output.mp4
+
+            # Windows
+            # Extract zip and run ffmpeg.exe
+            ```
           files: |
-            dist/ffmpeg-windows-amd64.zip
-            dist/ffmpeg.exe
-            dist/ffprobe.exe
+            artifacts/release-linux/*
+            artifacts/release-macos/*
+            artifacts/release-windows/*
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
