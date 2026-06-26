@@ -456,6 +456,11 @@ if build "giflib" "5.2.2"; then
   sed 's/$(MAKE) -C doc//g' Makefile >Makefile.patched
   rm Makefile
   sed 's/install: all install-bin install-include install-lib install-man/install: all install-bin install-include install-lib/g' Makefile.patched >Makefile
+  # On MinGW/Windows, skip building libutil.so due to linker issues
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+    sed -i 's/UTILS = gifview giffont gif2bdf/UTILS = /g' Makefile
+    sed -i '/libutil.so/d' Makefile
+  fi
   #multicore build disabled for this library
   execute make
   execute make PREFIX="${WORKSPACE}" install
