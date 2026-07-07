@@ -158,6 +158,12 @@ jobs:
       - name: List release files
         run: find artifacts/ -type f
 
+      - name: Delete existing release and tag
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -169,7 +175,7 @@ jobs:
             This release is automatically updated on every push to master.
 
             ### Included Libraries
-            - FFmpeg 8.1.2 with SVT-HEVC, SVT-AV1, x264, x265, libvmaf, and more
+            - FFmpeg 8.1.2 with SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
             - See build-ffmpeg for full list
 
             ### Available Files
