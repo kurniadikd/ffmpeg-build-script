@@ -803,6 +803,17 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
   CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 fi
 
+if build "xeve" "0.5.1"; then
+  download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
+  make_dir build
+  cd build || exit
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
+  execute make -j "$MJOBS"
+  execute make install
+  build_done "xeve" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libxeve")
+
 if build "libvpx" "1.16.0"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 

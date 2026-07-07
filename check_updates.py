@@ -351,6 +351,7 @@ def main():
         "OpenCL-Headers": "KhronosGroup/OpenCL-Headers",
         "OpenCL-ICD-Loader": "KhronosGroup/OpenCL-ICD-Loader",
         "fdk_aac": "mstorsjo/fdk-aac",
+        "xeve": "mpeg5/xeve",
     }
     for name, repo in github_v.items():
         latest = get_latest_github_tag(repo, prefix="v")
