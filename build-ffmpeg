@@ -1043,7 +1043,7 @@ if command_exists "meson"; then
     CURRENT_PACKAGE_VERSION=$(git rev-parse --short HEAD || echo "0")
   fi
   if build "lc3" "$CURRENT_PACKAGE_VERSION"; then
-    execute meson setup build_dir --prefix="${WORKSPACE}" --buildtype=release -Ddefault_library=static
+    execute meson setup build_dir --prefix="${WORKSPACE}" --libdir="lib" --buildtype=release -Ddefault_library=static
     execute ninja -C build_dir
     execute ninja -C build_dir install
     build_done "lc3" $CURRENT_PACKAGE_VERSION
