@@ -790,6 +790,19 @@ if $NONFREE_AND_GPL; then
   fi
 fi
 
+if [[ "$(uname -m)" == "x86_64" ]]; then
+  if build "svtvp9" "0.3.1"; then
+    download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
+    cd "${PACKAGES}"/SVT-VP9-$CURRENT_PACKAGE_VERSION/Build/linux || exit
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release ../..
+    execute make -j "$MJOBS"
+    execute make install
+    execute cp "${PACKAGES}/SVT-VP9-$CURRENT_PACKAGE_VERSION/Build/linux/SvtVp9Enc.pc" "${WORKSPACE}/lib/pkgconfig/" 2>/dev/null || true
+    build_done "svtvp9" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
+fi
+
 if build "libvpx" "1.16.0"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
@@ -1334,6 +1347,18 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtHevcEnc.pc" ]]; then
     echo "Applying SVT-HEVC patch to FFmpeg..."
     download "https://aur.archlinux.org/cgit/aur.git/plain/010-ffmpeg-add-svt-hevc.patch?h=ffmpeg-full" "010-ffmpeg-add-svt-hevc.patch"
     execute patch -p1 < "$PACKAGES/010-ffmpeg-add-svt-hevc.patch"
+  fi
+fi
+
+if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtVp9Enc.pc" ]]; then
+  if [[ ! -f "libavcodec/libsvt_vp9.c" ]]; then
+    if ! command_exists "patch"; then
+      echo "Error: patch command not found, cannot apply SVT-VP9 patch." >&2
+      exit 1
+    fi
+    echo "Applying SVT-VP9 patch to FFmpeg..."
+    download "https://raw.githubusercontent.com/OpenVisualCloud/SVT-VP9/master/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch" "svt-vp9-ffmpeg.patch"
+    execute patch -p1 < "$PACKAGES/svt-vp9-ffmpeg.patch"
   fi
 fi
 
