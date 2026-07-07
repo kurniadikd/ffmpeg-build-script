@@ -793,11 +793,11 @@ fi
 if [[ "$(uname -m)" == "x86_64" ]]; then
   if build "svtvp9" "0.3.1"; then
     download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
-    cd "${PACKAGES}"/SVT-VP9-$CURRENT_PACKAGE_VERSION/Build/linux || exit
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release ../..
+    make_dir build
+    cd build || exit
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
     execute make -j "$MJOBS"
     execute make install
-    execute cp "${PACKAGES}/SVT-VP9-$CURRENT_PACKAGE_VERSION/Build/linux/SvtVp9Enc.pc" "${WORKSPACE}/lib/pkgconfig/" 2>/dev/null || true
     build_done "svtvp9" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
