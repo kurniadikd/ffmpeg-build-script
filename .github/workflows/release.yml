@@ -7,6 +7,8 @@ on:
     paths-ignore:
       - '*.md'
       - '.mimocode/**'
+  schedule:
+    - cron: '0 6 * * *'
   workflow_run:
     workflows: ["Check Codec Updates"]
     types:
@@ -21,6 +23,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-24.04
     steps:
@@ -60,6 +63,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: macos-15
     steps:
@@ -94,6 +98,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: windows-latest
     defaults:
@@ -152,6 +157,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -161,21 +168,22 @@ jobs:
       - name: List release files
         run: find artifacts/ -type f
 
-      - name: Delete existing release and tag
+      - name: Generate tag name
+        id: tag
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_TAG="build-$(date -u +%Y-%m-%d)"
+          echo "tag=$BUILD_TAG" >> "$GITHUB_OUTPUT"
+          echo "Building release: $BUILD_TAG"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "latest"
-          name: "FFmpeg Build (latest)"
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "FFmpeg Build (${{ steps.tag.outputs.tag }})"
           body: |
             ## Automated Build
 
-            This release is automatically updated on every push to master.
+            Built: ${{ steps.tag.outputs.tag }}
 
             ### Included Libraries
             - FFmpeg 8.1.2 with SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
@@ -195,6 +203,8 @@ jobs:
             # Windows
             # Extract zip and run ffmpeg.exe
             ```
+
+            Always available at: **latest** tag
           files: |
             artifacts/release-linux/*
             artifacts/release-macos/*
@@ -202,3 +212,10 @@ jobs:
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest tag to point to this release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f latest
+          git push -f origin latest
