@@ -186,7 +186,7 @@ jobs:
             Built: ${{ steps.tag.outputs.tag }}
 
             ### Included Libraries
-            - FFmpeg 8.1.2 with SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
+            - FFmpeg 8.1.2 with LC3, SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
             - See build-ffmpeg for full list
 
             ### Available Files
