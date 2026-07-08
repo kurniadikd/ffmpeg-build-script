@@ -451,7 +451,8 @@ fi
 if build "giflib" "5.2.2"; then
   # giflib Makefile uses Linux-specific flags (-soname, .so) that don't work on Windows/MinGW
   # FFmpeg has native GIF encoder/decoder, so giflib is not needed
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
     echo "Skipping giflib on Windows (FFmpeg has native GIF support)"
     build_done "giflib" $CURRENT_PACKAGE_VERSION
   else
