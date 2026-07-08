@@ -471,16 +471,24 @@ if build "giflib" "5.2.2"; then
 fi
 
 if build "pkg-config" "0.29.2"; then
-  download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-  	CFLAGS+=" -Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
-  	CFLAGS+=" -Wno-error=int-conversion"
-  	export CFLAGS
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    # MSYS2 provides pkg-config natively, no need to build from source
+    # Also avoids GCC 16+ 'bool' keyword conflict with old glib
+    echo "Skipping pkg-config on Windows (MSYS2 provides it natively)"
+    build_done "pkg-config" $CURRENT_PACKAGE_VERSION
+  else
+    download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+    	CFLAGS+=" -Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
+    	CFLAGS+=" -Wno-error=int-conversion"
+    	export CFLAGS
+    fi
+    execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "pkg-config" $CURRENT_PACKAGE_VERSION
   fi
-  execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "pkg-config" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "yasm" "1.3.0"; then
