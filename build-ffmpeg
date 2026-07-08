@@ -812,6 +812,9 @@ if build "xeve" "0.5.1"; then
   execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
   execute make -j "$MJOBS"
   execute make install
+  # XEVE builds both static and shared libs; remove shared for static ffmpeg build
+  rm -f "${WORKSPACE}/lib/libxeve.so"*
+  rm -f "${WORKSPACE}/lib/libxeveb.so"*
   build_done "xeve" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libxeve")
