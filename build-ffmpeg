@@ -492,11 +492,17 @@ if build "pkg-config" "0.29.2"; then
 fi
 
 if build "yasm" "1.3.0"; then
-  download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}"
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "yasm" $CURRENT_PACKAGE_VERSION
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping yasm on Windows (MSYS2 provides it natively)"
+    build_done "yasm" $CURRENT_PACKAGE_VERSION
+  else
+    download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "yasm" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
 if build "nasm" "3.01"; then
