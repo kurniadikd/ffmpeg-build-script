@@ -815,6 +815,9 @@ if build "xeve" "0.5.1"; then
   # XEVE builds both static and shared libs; remove shared for static ffmpeg build
   rm -f "${WORKSPACE}/lib/libxeve.so"*
   rm -f "${WORKSPACE}/lib/libxeveb.so"*
+  # XEVE installs static lib to lib/xeve/ but pkgconfig points to lib/; move static lib to lib/
+  cp "${WORKSPACE}/lib/xeve/libxeve.a" "${WORKSPACE}/lib/" 2>/dev/null || true
+  cp "${WORKSPACE}/lib/xeveb/libxeveb.a" "${WORKSPACE}/lib/" 2>/dev/null || true
   build_done "xeve" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libxeve")
