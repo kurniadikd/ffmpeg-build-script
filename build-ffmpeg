@@ -449,22 +449,24 @@ fi
 ##
 
 if build "giflib" "5.2.2"; then
-  download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-5.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
-  cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
-  #building docs fails if the tools needed are not installed
-  #there is no option to not build the docs on Linux, we need to modify the Makefile
-  sed 's/$(MAKE) -C doc//g' Makefile >Makefile.patched
-  rm Makefile
-  sed 's/install: all install-bin install-include install-lib install-man/install: all install-bin install-include install-lib/g' Makefile.patched >Makefile
-  # On MinGW/Windows, skip building libutil.so due to linker issues
+  # giflib Makefile uses Linux-specific flags (-soname, .so) that don't work on Windows/MinGW
+  # FFmpeg has native GIF encoder/decoder, so giflib is not needed
   if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-    sed -i 's/UTILS = gifview giffont gif2bdf/UTILS = /g' Makefile
-    sed -i '/libutil.so/d' Makefile
+    echo "Skipping giflib on Windows (FFmpeg has native GIF support)"
+    build_done "giflib" $CURRENT_PACKAGE_VERSION
+  else
+    download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-5.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
+    cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
+    #building docs fails if the tools needed are not installed
+    #there is no option to not build the docs on Linux, we need to modify the Makefile
+    sed 's/$(MAKE) -C doc//g' Makefile >Makefile.patched
+    rm Makefile
+    sed 's/install: all install-bin install-include install-lib install-man/install: all install-bin install-include install-lib/g' Makefile.patched >Makefile
+    #multicore build disabled for this library
+    execute make
+    execute make PREFIX="${WORKSPACE}" install
+    build_done "giflib" $CURRENT_PACKAGE_VERSION
   fi
-  #multicore build disabled for this library
-  execute make
-  execute make PREFIX="${WORKSPACE}" install
-  build_done "giflib" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "pkg-config" "0.29.2"; then
