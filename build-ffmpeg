@@ -697,7 +697,7 @@ if command_exists "python3"; then
   fi
   if command_exists "meson"; then
     if build "dav1d" "1.5.3"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
+      download "https://github.com/videolan/dav1d/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
       CFLAGSBACKUP=$CFLAGS
