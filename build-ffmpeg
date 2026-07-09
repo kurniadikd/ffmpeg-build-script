@@ -831,7 +831,7 @@ if $NONFREE_AND_GPL; then
       download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
       cd build || exit
-      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-error" .. -G"Unix Makefiles"
       execute make -j "$MJOBS"
       execute make install
       build_done "svthevc" $CURRENT_PACKAGE_VERSION
