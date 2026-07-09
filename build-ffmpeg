@@ -785,15 +785,24 @@ if $NONFREE_AND_GPL; then
     execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
     execute make -j "$MJOBS"
     cd ../8bit || exit
-    ln -sf ../10bit/libx265.a libx265_main10.a
-    ln -sf ../12bit/libx265.a libx265_main12.a
-    execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+    # Use cp instead of ln -sf on Windows for compatibility
+    cp ../10bit/libx265.a libx265_main10.a
+    cp ../12bit/libx265.a libx265_main12.a
+    # On Windows, -ldl is not needed (dl functions are in kernel32)
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+    else
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+    fi
     execute make -j "$MJOBS"
 
     mv libx265.a libx265_main.a
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
       execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+      # On Windows, use libtool to combine static libraries
+      execute libtool.exe -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
     else
       execute ar -M <<'EOF'
 CREATE libx265.a
