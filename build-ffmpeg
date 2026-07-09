@@ -523,41 +523,65 @@ fi
 
 if ! command_exists "m4" || ! m4 --version >/dev/null 2>&1 || ! version_satisfies "$(m4 --version 2>&1 | head -n 1 | awk '{print $NF}')" "1.4.8"; then
   if build "m4" "1.4.21"; then
-    download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}"
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "m4" $CURRENT_PACKAGE_VERSION
+    UNAME_S="$(uname -s 2>/dev/null || true)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+      echo "Skipping m4 on Windows (MSYS2 provides it natively)"
+      build_done "m4" $CURRENT_PACKAGE_VERSION
+    else
+      download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}"
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "m4" $CURRENT_PACKAGE_VERSION
+    fi
   fi
 fi
 
 if ! command_exists "autoconf" || ! autoconf --version >/dev/null 2>&1; then
   if build "autoconf" "2.73"; then
-    download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}"
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "autoconf" $CURRENT_PACKAGE_VERSION
+    UNAME_S="$(uname -s 2>/dev/null || true)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+      echo "Skipping autoconf on Windows (MSYS2 provides it natively)"
+      build_done "autoconf" $CURRENT_PACKAGE_VERSION
+    else
+      download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}"
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "autoconf" $CURRENT_PACKAGE_VERSION
+    fi
   fi
 fi
 
 if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
   if build "automake" "1.18.1"; then
-    download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}"
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "automake" $CURRENT_PACKAGE_VERSION
+    UNAME_S="$(uname -s 2>/dev/null || true)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+      echo "Skipping automake on Windows (MSYS2 provides it natively)"
+      build_done "automake" $CURRENT_PACKAGE_VERSION
+    else
+      download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}"
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "automake" $CURRENT_PACKAGE_VERSION
+    fi
   fi
 fi
 
 if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } && { ! command_exists "glibtoolize" || ! glibtoolize --version >/dev/null 2>&1; }; then
   if build "libtool" "2.5.4"; then
-    download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "libtool" $CURRENT_PACKAGE_VERSION
+    UNAME_S="$(uname -s 2>/dev/null || true)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+      echo "Skipping libtool on Windows (MSYS2 provides it natively)"
+      build_done "libtool" $CURRENT_PACKAGE_VERSION
+    else
+      download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "libtool" $CURRENT_PACKAGE_VERSION
+    fi
   fi
 else
   mkdir -p "${WORKSPACE}/bin"
