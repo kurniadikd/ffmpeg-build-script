@@ -242,6 +242,50 @@ execute() {
 cmake() {
   if [[ "$1" == "--build" ]]; then
     command cmake "$@"
+    return
+  fi
+
+  local args=()
+  local has_generator=false
+  local is_windows=false
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    is_windows=true
+  fi
+
+  if $is_windows; then
+    local i=1
+    while (( i <= $# )); do
+      local arg="${!i}"
+      if [[ "$arg" == "-G" ]]; then
+        has_generator=true
+        local next_i=$((i + 1))
+        local next_arg="${!next_i}"
+        if [[ "$next_arg" == "Unix Makefiles" ]]; then
+          args+=("-G" "MSYS Makefiles")
+        else
+          args+=("-G" "$next_arg")
+        fi
+        i=$((i + 2))
+      elif [[ "$arg" == -G* ]]; then
+        has_generator=true
+        local gen="${arg#-G}"
+        if [[ "$gen" == "Unix Makefiles" ]]; then
+          args+=("-GMSYS Makefiles")
+        else
+          args+=("$arg")
+        fi
+        i=$((i + 1))
+      else
+        args+=("$arg")
+        i=$((i + 1))
+      fi
+    done
+
+    if ! $has_generator; then
+      args+=("-G" "MSYS Makefiles")
+    fi
+    command cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "${args[@]}"
   else
     command cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "$@"
   fi
@@ -1013,7 +1057,7 @@ if ! $DISABLE_LV2 ; then
     if command_exists "meson"; then
   
       if build "lv2" "1.18.10"; then
-        download "https://lv2plug.in/spec/lv2-$CURRENT_PACKAGE_VERSION.tar.xz" "lv2-$CURRENT_PACKAGE_VERSION.tar.xz"
+        download "https://github.com/lv2/lv2/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "lv2-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install

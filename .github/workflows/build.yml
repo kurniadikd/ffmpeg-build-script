@@ -207,7 +207,6 @@ jobs:
         env:
           MSYS: winsymlinks:copy
         run: |
-          cp /mingw64/bin/mingw32-make.exe /usr/bin/make.exe
           SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
 
       - name: test run ffmpeg
