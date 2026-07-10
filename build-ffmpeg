@@ -825,6 +825,14 @@ if $NONFREE_AND_GPL; then
         export CXXFLAGS="-DHAVE_NEON=1 ${CXXFLAGS}"
     fi
 
+    # Fix compilation error on GCC 13+ / Clang due to missing <cstdint>
+    if [ -f "source/dynamicHDR10/json11/json11.cpp" ]; then
+      echo "Patching json11.cpp to include <cstdint>"
+      echo "#include <cstdint>" > temp_json11.cpp
+      cat source/dynamicHDR10/json11/json11.cpp >> temp_json11.cpp
+      mv temp_json11.cpp source/dynamicHDR10/json11/json11.cpp
+    fi
+
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
     mkdir -p 8bit 10bit 12bit
