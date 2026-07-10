@@ -645,14 +645,20 @@ else
 fi
 
 if build "cmake" "4.3.4"; then
-  CXXFLAGS_BACKUP=$CXXFLAGS
-  export CXXFLAGS+=" -std=c++11"
-  download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "cmake" $CURRENT_PACKAGE_VERSION
-  export CXXFLAGS=$CXXFLAGS_BACKUP
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping cmake build on Windows (MSYS2 provides cmake natively)"
+    build_done "cmake" $CURRENT_PACKAGE_VERSION
+  else
+    CXXFLAGS_BACKUP=$CXXFLAGS
+    export CXXFLAGS+=" -std=c++11"
+    download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "cmake" $CURRENT_PACKAGE_VERSION
+    export CXXFLAGS=$CXXFLAGS_BACKUP
+  fi
 fi
 
 ##
