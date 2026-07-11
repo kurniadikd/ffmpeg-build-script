@@ -1084,6 +1084,9 @@ if ! $DISABLE_LV2 ; then
       fi
       if build "pcre" "8.45"; then
         download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/$CURRENT_PACKAGE_VERSION/pcre-$CURRENT_PACKAGE_VERSION.tar.gz" "pcre-$CURRENT_PACKAGE_VERSION.tar.gz"
+        if [ -f "pcre_chartables.c.dist" ]; then
+          cp -f pcre_chartables.c.dist pcre_chartables.c
+        fi
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
