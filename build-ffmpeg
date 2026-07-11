@@ -1144,7 +1144,7 @@ CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
 if build "lame" "3.100"; then
   download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-frontend
   execute make -j "$MJOBS"
   execute make install
 
