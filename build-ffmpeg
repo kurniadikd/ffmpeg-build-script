@@ -1257,6 +1257,28 @@ if build "libpng" "1.6.58"; then
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j "$MJOBS"
   execute make install
+
+  # Fix Windows symlink issues for libpng headers, libraries and config in workspace
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+    echo "Replacing libpng symlinks with copies to fix Windows compiler/linker errors"
+    if [ -f "${WORKSPACE}/include/libpng16/png.h" ]; then
+      rm -f "${WORKSPACE}/include/png.h"
+      rm -f "${WORKSPACE}/include/pngconf.h"
+      rm -f "${WORKSPACE}/include/pnglibconf.h"
+      cp -f "${WORKSPACE}/include/libpng16/png.h" "${WORKSPACE}/include/png.h"
+      cp -f "${WORKSPACE}/include/libpng16/pngconf.h" "${WORKSPACE}/include/pngconf.h"
+      cp -f "${WORKSPACE}/include/libpng16/pnglibconf.h" "${WORKSPACE}/include/pnglibconf.h"
+    fi
+    if [ -f "${WORKSPACE}/lib/libpng16.a" ]; then
+      rm -f "${WORKSPACE}/lib/libpng.a"
+      cp -f "${WORKSPACE}/lib/libpng16.a" "${WORKSPACE}/lib/libpng.a"
+    fi
+    if [ -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" ]; then
+      rm -f "${WORKSPACE}/lib/pkgconfig/libpng.pc"
+      cp -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" "${WORKSPACE}/lib/pkgconfig/libpng.pc"
+    fi
+  fi
+
   build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
