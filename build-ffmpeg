@@ -1087,6 +1087,8 @@ if ! $DISABLE_LV2 ; then
         if [ -f "pcre_chartables.c.dist" ]; then
           cp -f pcre_chartables.c.dist pcre_chartables.c
         fi
+        sed 's/LN_S = @LN_S@/LN_S = cp -f/g' Makefile.in > Makefile.in.patched
+        mv Makefile.in.patched Makefile.in
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
