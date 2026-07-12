@@ -200,6 +200,8 @@ jobs:
             curl
             unzip
             python
+            gettext-devel
+
 
       - name: Checkout code
         uses: actions/checkout@v4

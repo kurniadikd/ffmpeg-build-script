@@ -637,7 +637,19 @@ else
 fi
 
 if $NONFREE_AND_GPL; then
-  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || ! command_exists "autopoint" || ! autopoint --version >/dev/null 2>&1; then
+  AUTOPOINT_OK=true
+  if command_exists "autopoint"; then
+    AUTOPOINT_PATH=$(which autopoint 2>/dev/null)
+    if [[ "$AUTOPOINT_PATH" == /usr/bin/* ]] || [[ "$AUTOPOINT_PATH" == /bin/* ]]; then
+      if [ ! -f /usr/share/gettext/archive.dir.tar.xz ] && [ ! -f /usr/share/gettext/archive.dir.tar.gz ]; then
+        AUTOPOINT_OK=false
+      fi
+    fi
+  else
+    AUTOPOINT_OK=false
+  fi
+
+  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || [ "$AUTOPOINT_OK" = false ]; then
     if build "gettext" "1.0"; then
       download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
