@@ -201,6 +201,8 @@ jobs:
             unzip
             python
             gettext-devel
+            patch
+
 
 
       - name: Checkout code
