@@ -1414,6 +1414,15 @@ if build "libzmq" "4.3.5"; then
   mv src/proxy.cpp.patched src/proxy.cpp
   execute make -j "$MJOBS"
   execute make install
+
+  # On Windows, libzmq needs -DZMQ_STATIC for static linking
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+    if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
+      sed 's/^Cflags: .*/& -DZMQ_STATIC/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
+      mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
+    fi
+  fi
+
   build_done "libzmq" $CURRENT_PACKAGE_VERSION
   CONFIGURE_OPTIONS+=("--enable-libzmq")
 fi
