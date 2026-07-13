@@ -1415,10 +1415,10 @@ if build "libzmq" "4.3.5"; then
   execute make -j "$MJOBS"
   execute make install
 
-  # On Windows, libzmq needs -DZMQ_STATIC for static linking
+  # On Windows, libzmq needs -DZMQ_STATIC and -lws2_32 for static linking
   if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
     if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
-      sed 's/^Cflags: .*/& -DZMQ_STATIC/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
+      sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
       mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
     fi
   fi
