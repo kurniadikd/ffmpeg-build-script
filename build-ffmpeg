@@ -1569,10 +1569,15 @@ if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == 
   fi
 fi
 
+THREAD_FLAGS="--enable-pthreads"
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+  THREAD_FLAGS="--enable-w32threads"
+fi
+
 if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-shared \
-  --enable-pthreads \
+  ${THREAD_FLAGS} \
   --enable-static \
   --enable-version3 \
   --extra-cflags="${CFLAGS}" \
