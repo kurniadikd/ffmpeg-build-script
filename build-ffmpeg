@@ -21,7 +21,10 @@ DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
 CURRENT_PACKAGE_VERSION=0
-
+UNAME_S="$(uname -s 2>/dev/null || true)"
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+  EXTRALIBS="${EXTRALIBS} -lws2_32 -liphlpapi -lbcrypt"
+fi
 
 # Version comparison function
 # Returns: 0 if v1 >= v2, 1 otherwise
