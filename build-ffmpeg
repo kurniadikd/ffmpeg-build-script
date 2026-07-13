@@ -21,10 +21,7 @@ DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
 CURRENT_PACKAGE_VERSION=0
-UNAME_S="$(uname -s 2>/dev/null || true)"
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-  EXTRALIBS="${EXTRALIBS} -lws2_32 -liphlpapi -lbcrypt"
-fi
+
 
 # Version comparison function
 # Returns: 0 if v1 >= v2, 1 otherwise
@@ -1558,6 +1555,17 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtVp9Enc.pc" ]]; then
     echo "Applying SVT-VP9 patch to FFmpeg..."
     download "https://raw.githubusercontent.com/OpenVisualCloud/SVT-VP9/master/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch" "svt-vp9-ffmpeg.patch"
     execute patch -p1 < "$PACKAGES/svt-vp9-ffmpeg.patch"
+  fi
+fi
+
+# On Windows, libzmq needs -DZMQ_STATIC and -lws2_32 for static linking.
+# We ensure the PC file is patched unconditionally right before configuring FFmpeg to handle cached builds.
+UNAME_S="$(uname -s 2>/dev/null || true)"
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+  if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
+    echo "Ensuring libzmq.pc is patched for Windows static linking..."
+    sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
+    mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
   fi
 fi
 
