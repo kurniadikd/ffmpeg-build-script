@@ -37,7 +37,9 @@ jobs:
 
       - name: Build FFmpeg
         run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          kill %1
 
       - name: Test FFmpeg
         run: |
@@ -45,18 +47,22 @@ jobs:
 
       - name: Prepare release assets
         run: |
-          mkdir -p dist
-          cp workspace/bin/ffmpeg dist/
-          cp workspace/bin/ffprobe dist/
-          cp workspace/bin/ffplay dist/ || true
-          cd dist
-          tar -czvf ffmpeg-linux-amd64.tar.gz ffmpeg ffprobe
+          mkdir -p release
+          cp workspace/bin/ffmpeg release/
+          cp workspace/bin/ffprobe release/
+          cp workspace/bin/ffplay release/ || true
+          cd release
+          tar -czvf ../ffmpeg-linux-amd64.tar.gz *
+          cd ..
+          sha256sum ffmpeg-linux-amd64.tar.gz > ffmpeg-linux-amd64.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-linux
-          path: dist/
+          path: |
+            ffmpeg-linux-amd64.tar.gz
+            ffmpeg-linux-amd64.tar.gz.sha256
 
   build-macos:
     name: Build macOS
@@ -72,7 +78,9 @@ jobs:
 
       - name: Build FFmpeg
         run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
+          kill %1
 
       - name: Test FFmpeg
         run: |
@@ -80,18 +88,22 @@ jobs:
 
       - name: Prepare release assets
         run: |
-          mkdir -p dist
-          cp workspace/bin/ffmpeg dist/
-          cp workspace/bin/ffprobe dist/
-          cp workspace/bin/ffplay dist/ || true
-          cd dist
-          tar -czvf ffmpeg-macos-universal.tar.gz ffmpeg ffprobe
+          mkdir -p release
+          cp workspace/bin/ffmpeg release/
+          cp workspace/bin/ffprobe release/
+          cp workspace/bin/ffplay release/ || true
+          cd release
+          tar -czvf ../ffmpeg-macos-universal.tar.gz *
+          cd ..
+          shasum -a 256 ffmpeg-macos-universal.tar.gz > ffmpeg-macos-universal.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-macos
-          path: dist/
+          path: |
+            ffmpeg-macos-universal.tar.gz
+            ffmpeg-macos-universal.tar.gz.sha256
 
   build-windows:
     name: Build Windows (MSYS2)
@@ -130,8 +142,7 @@ jobs:
             python
             gettext-devel
             patch
-
-
+            zip
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -140,7 +151,9 @@ jobs:
         env:
           MSYS: winsymlinks:copy
         run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          kill %1
 
       - name: Test FFmpeg
         run: |
@@ -149,18 +162,22 @@ jobs:
       - name: Prepare release assets
         shell: msys2 {0}
         run: |
-          mkdir -p dist
-          cp workspace/bin/ffmpeg.exe dist/
-          cp workspace/bin/ffprobe.exe dist/
-          cp workspace/bin/ffplay.exe dist/ || true
-          cd dist
-          7z a ffmpeg-windows-amd64.zip ffmpeg.exe ffprobe.exe
+          mkdir -p release
+          cp workspace/bin/ffmpeg.exe release/
+          cp workspace/bin/ffprobe.exe release/
+          cp workspace/bin/ffplay.exe release/ || true
+          cd release
+          zip ../ffmpeg-windows-amd64.zip *
+          cd ..
+          sha256sum ffmpeg-windows-amd64.zip > ffmpeg-windows-amd64.zip.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: dist/
+          path: |
+            ffmpeg-windows-amd64.zip
+            ffmpeg-windows-amd64.zip.sha256
 
   create-release:
     name: Create GitHub Release
@@ -177,9 +194,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
+          merge-multiple: false
 
-      - name: List release files
-        run: find artifacts/ -type f
+      - name: Collect release files
+        run: |
+          mkdir -p release-files
+          find artifacts/ -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) -exec cp {} release-files/ \;
+          echo "=== Release files ==="
+          ls -lah release-files/
 
       - name: Generate tag name
         id: tag
@@ -188,11 +210,29 @@ jobs:
           echo "tag=$BUILD_TAG" >> "$GITHUB_OUTPUT"
           echo "Building release: $BUILD_TAG"
 
-      - name: Create Release
+      - name: Determine available platforms
+        id: platforms
+        run: |
+          PLATFORMS=""
+          if [ -f release-files/ffmpeg-linux-amd64.tar.gz ]; then
+            PLATFORMS="${PLATFORMS}- \`ffmpeg-linux-amd64.tar.gz\` — Linux x86_64\n"
+          fi
+          if [ -f release-files/ffmpeg-macos-universal.tar.gz ]; then
+            PLATFORMS="${PLATFORMS}- \`ffmpeg-macos-universal.tar.gz\` — macOS (Universal)\n"
+          fi
+          if [ -f release-files/ffmpeg-windows-amd64.zip ]; then
+            PLATFORMS="${PLATFORMS}- \`ffmpeg-windows-amd64.zip\` — Windows x86_64\n"
+          fi
+          echo "list<<EOF" >> "$GITHUB_OUTPUT"
+          echo -e "$PLATFORMS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create dated release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "FFmpeg Build (${{ steps.tag.outputs.tag }})"
+          make_latest: false
           body: |
             ## Automated Build
 
@@ -200,12 +240,52 @@ jobs:
 
             ### Included Libraries
             - FFmpeg 8.1.2 with LC3, SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
-            - See build-ffmpeg for full list
+            - See `build-ffmpeg` for full list
 
             ### Available Files
-            - `ffmpeg-linux-amd64.tar.gz` - Linux x86_64
-            - `ffmpeg-macos-universal.tar.gz` - macOS
-            - `ffmpeg-windows-amd64.zip` - Windows x86_64
+            ${{ steps.platforms.outputs.list }}
+
+            ### Usage
+            ```bash
+            # Linux/macOS
+            tar xzf ffmpeg-linux-amd64.tar.gz
+            ./ffmpeg -i input.mp4 output.mp4
+
+            # Windows
+            # Extract zip and run ffmpeg.exe
+            ```
+          files: release-files/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete existing latest tag and release
+        run: |
+          # Delete the release first (if it exists)
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          # Delete the tag if it still exists
+          git push origin :refs/tags/latest 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "FFmpeg Build (Latest)"
+          make_latest: true
+          body: |
+            ## FFmpeg Build — Latest
+
+            > This release is automatically updated on every successful build.
+            > Last updated: ${{ steps.tag.outputs.tag }}
+
+            ### Included Libraries
+            - FFmpeg 8.1.2 with LC3, SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
+            - See `build-ffmpeg` for full list
+
+            ### Available Files
+            ${{ steps.platforms.outputs.list }}
 
             ### Usage
             ```bash
@@ -217,37 +297,11 @@ jobs:
             # Extract zip and run ffmpeg.exe
             ```
 
-            Always available at: **latest** tag
-          files: |
-            artifacts/release-linux/*
-            artifacts/release-macos/*
-            artifacts/release-windows/*
-          fail_on_unmatched_files: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create/Update Latest Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: "FFmpeg Build (Latest)"
-          body: |
-            ## Automated Build (Latest)
-
-            Built: ${{ steps.tag.outputs.tag }}
-
-            ### Included Libraries
-            - FFmpeg 8.1.2 with LC3, SVT-HEVC, SVT-VP9, SVT-AV1, x264, x265, libvmaf, and more
-            - See build-ffmpeg for full list
-
-            ### Available Files
-            - `ffmpeg-linux-amd64.tar.gz` - Linux x86_64
-            - `ffmpeg-macos-universal.tar.gz` - macOS
-            - `ffmpeg-windows-amd64.zip` - Windows x86_64
-          files: |
-            artifacts/release-linux/*
-            artifacts/release-macos/*
-            artifacts/release-windows/*
+            ### Permanent Download Links
+            - **Linux**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-linux-amd64.tar.gz`
+            - **macOS**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-macos-universal.tar.gz`
+            - **Windows**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-windows-amd64.zip`
+          files: release-files/*
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
