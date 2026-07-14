@@ -8,40 +8,43 @@ def verify(workspace_dir, configure_options):
     lib_dir = os.path.join(workspace_dir, "lib")
     pkgconfig_dir = os.path.join(lib_dir, "pkgconfig")
     
+    is_windows = os.name == 'nt' or any(x in sys.platform for x in ['win32', 'msys', 'cygwin']) or 'MSYSTEM' in os.environ
+
     # 1. Resolve known Windows library naming quirks
     # xvidcore.a -> libxvidcore.a
-    xvid_a = os.path.join(lib_dir, "xvidcore.a")
-    libxvid_a = os.path.join(lib_dir, "libxvidcore.a")
-    if os.path.exists(xvid_a) and not os.path.exists(libxvid_a):
-        print(f"[FIX] Copying {xvid_a} -> {libxvid_a} for linker compat...")
-        shutil.copy2(xvid_a, libxvid_a)
+    if is_windows:
+        xvid_a = os.path.join(lib_dir, "xvidcore.a")
+        libxvid_a = os.path.join(lib_dir, "libxvidcore.a")
+        if os.path.exists(xvid_a) and not os.path.exists(libxvid_a):
+            print(f"[FIX] Copying {xvid_a} -> {libxvid_a} for linker compat...")
+            shutil.copy2(xvid_a, libxvid_a)
 
-    # 2. Unconditionally patch libzmq.pc if it exists
+    # 2. Patch libzmq.pc if it exists (add Windows-specific static linking flags)
     zmq_pc = os.path.join(pkgconfig_dir, "libzmq.pc")
     if os.path.exists(zmq_pc):
-        print(f"[FIX] Inspecting and patching {zmq_pc} for Windows static linking...")
         with open(zmq_pc, "r", encoding="utf-8") as f:
             lines = f.readlines()
         
         patched = False
         new_lines = []
         for line in lines:
-            # Add -DZMQ_STATIC if not present
+            # Add -DZMQ_STATIC if not present (applicable on all platforms for static builds, but especially Windows)
             if line.startswith("Cflags:") and "-DZMQ_STATIC" not in line:
                 line = line.strip() + " -DZMQ_STATIC\n"
                 patched = True
-            # Add -lws2_32 if not present
-            if line.startswith("Libs:") and "-lws2_32" not in line:
+            # Add -lws2_32 ONLY on Windows
+            if is_windows and line.startswith("Libs:") and "-lws2_32" not in line:
                 line = line.strip() + " -lws2_32\n"
                 patched = True
             new_lines.append(line)
             
         if patched:
+            print(f"[FIX] Patching {zmq_pc} for static linking...")
             with open(zmq_pc, "w", encoding="utf-8") as f:
                 f.writelines(new_lines)
-            print("[FIX] Successfully patched libzmq.pc Cflags and Libs.")
+            print("[FIX] Successfully patched libzmq.pc.")
         else:
-            print("[INFO] libzmq.pc is already patched.")
+            print("[INFO] libzmq.pc is already up-to-date.")
 
     # 3. Map FFmpeg configure options to expected static library files
     lib_mappings = {
