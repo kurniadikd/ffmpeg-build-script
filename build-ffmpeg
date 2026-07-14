@@ -1567,7 +1567,12 @@ if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == 
     sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
     mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
   fi
+  if [ -f "${WORKSPACE}/lib/xvidcore.a" ]; then
+    echo "Ensuring libxvidcore.a exists for Windows static linking..."
+    cp "${WORKSPACE}/lib/xvidcore.a" "${WORKSPACE}/lib/libxvidcore.a"
+  fi
 fi
+
 
 THREAD_FLAGS="--enable-pthreads"
 FFMPEG_LDFLAGS="${LDFLAGS}"
