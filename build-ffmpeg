@@ -1558,19 +1558,11 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtVp9Enc.pc" ]]; then
   fi
 fi
 
-# On Windows, libzmq needs -DZMQ_STATIC and -lws2_32 for static linking.
-# We ensure the PC file is patched unconditionally right before configuring FFmpeg to handle cached builds.
-UNAME_S="$(uname -s 2>/dev/null || true)"
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-  if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
-    echo "Ensuring libzmq.pc is patched for Windows static linking..."
-    sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
-    mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
-  fi
-  if [ -f "${WORKSPACE}/lib/xvidcore.a" ]; then
-    echo "Ensuring libxvidcore.a exists for Windows static linking..."
-    cp "${WORKSPACE}/lib/xvidcore.a" "${WORKSPACE}/lib/libxvidcore.a"
-  fi
+# Run automated sanity checks on the compiled static libraries before configuring FFmpeg.
+# This automatically handles patches (e.g., libzmq.pc) and naming fixes (e.g., libxvidcore.a)
+# and fails early if any required static libraries are missing.
+if [ -f "$CWD/verify_static_libs.py" ]; then
+  execute python "$CWD/verify_static_libs.py" "$WORKSPACE" "${CONFIGURE_OPTIONS[@]}"
 fi
 
 
