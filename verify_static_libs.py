@@ -46,6 +46,38 @@ def verify(workspace_dir, configure_options):
         else:
             print("[INFO] libzmq.pc is already up-to-date.")
 
+    # 2.5 Scan and patch all .pc files in pkgconfig to ensure static compatibility
+    if os.path.exists(pkgconfig_dir):
+        print("\n[INFO] Scanning and patching .pc files in pkgconfig:")
+        for filename in os.listdir(pkgconfig_dir):
+            if filename.endswith(".pc"):
+                path = os.path.join(pkgconfig_dir, filename)
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                
+                modified = False
+                lines = content.splitlines()
+                new_lines = []
+                for line in lines:
+                    if line.startswith("Libs:") or line.startswith("Libs.private:"):
+                        # Remove or replace dynamic runtime/stdc++ dependencies from static pc files
+                        for bad_flag in ["-lgcc_s", "-lgcc_eh", "-lstdc++", "-lgcc"]:
+                            if bad_flag in line:
+                                print(f"  [PC PATCH] Removing '{bad_flag}' from {filename}: {line}")
+                                # Replace with space to avoid joining other flags
+                                line = line.replace(bad_flag, " ")
+                                modified = True
+                    new_lines.append(line)
+                
+                if modified:
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write("\n".join(new_lines) + "\n")
+                
+                # Print Libs/Libs.private for visibility in logs
+                for line in new_lines:
+                    if line.startswith("Libs:") or line.startswith("Libs.private:"):
+                        print(f"  {filename} -> {line.strip()}")
+
     # 3. Map FFmpeg configure options to expected static library files
     lib_mappings = {
         "--enable-libx264": ["libx264.a"],
