@@ -204,6 +204,7 @@ jobs:
             python
             gettext-devel
             patch
+            mingw-w64-x86_64-libvpl
 
 
 

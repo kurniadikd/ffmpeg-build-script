@@ -143,6 +143,7 @@ jobs:
             gettext-devel
             patch
             zip
+            mingw-w64-x86_64-libvpl
 
       - name: Checkout code
         uses: actions/checkout@v4

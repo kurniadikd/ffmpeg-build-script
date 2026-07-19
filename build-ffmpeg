@@ -1571,6 +1571,7 @@ FFMPEG_LDFLAGS="${LDFLAGS}"
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
   THREAD_FLAGS="--enable-w32threads"
   FFMPEG_LDFLAGS="${LDFLAGS} -static -static-libgcc -static-libstdc++"
+  CONFIGURE_OPTIONS+=("--enable-libvpl")
 fi
 
 if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
