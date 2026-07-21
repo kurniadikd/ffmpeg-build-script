@@ -360,6 +360,49 @@ Tested on
 * Debian 12
 * Ubuntu 22.04
 
+## Advanced Integration: VapourSynth + FFmpeg
+
+Because this FFmpeg build is compiled with `--enable-vapoursynth`, you can load Python-based [VapourSynth](https://www.vapoursynth.com/) scripts directly into FFmpeg. This is extremely useful for advanced video post-processing, such as AI frame interpolation (e.g., using RIFE GPU) and video upscaling.
+
+### Method 1: Direct Input (Recommended)
+Since the `vapoursynth` demuxer is built natively, you can pass a `.vpy` script directly as the input file to FFmpeg:
+
+```bash
+ffmpeg -y -i script.vpy -c:v hevc_qsv -global_quality 25 output.mp4
+```
+
+### Method 2: Piping via vspipe
+Alternatively, you can output raw video from `vspipe` and pipe it into FFmpeg:
+
+```bash
+vspipe --y4m script.vpy - | ffmpeg -y -i pipe:0 -c:v hevc_qsv -global_quality 25 output.mp4
+```
+
+### Example VapourSynth Script (`script.vpy`) for RIFE Frame Interpolation (GPU-accelerated)
+
+Here is a template python script to double the framerate of a video using the RIFE (Real-Time Intermediate Flow Estimation) GPU plugin:
+
+```python
+import vapoursynth as vs
+core = vs.core
+
+# 1. Load the video
+video = core.bs.VideoSource(source="input.mp4")
+
+# 2. Convert format to RGBA half/float as required by RIFE
+video = core.resize.Bicubic(video, format=vs.RGBS, matrix_in_s="709")
+
+# 3. Call RIFE GPU Plugin (example using vs-rife)
+# Note: Ensure you have the 'vs-rife' plugin and its models installed on your system.
+video = core.rife.RIFE(video, model=9, factor_num=2, factor_den=1, gpu_id=0)
+
+# 4. Convert back to YUV420p8 (or YUV420P10) for HEVC/H.264 encoding
+video = core.resize.Bicubic(video, format=vs.YUV420P8, matrix_s="709")
+
+# 5. Output the result
+video.set_output()
+```
+
 ## Continuous Integration
 
 ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
