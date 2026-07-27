@@ -46,7 +46,8 @@ echo " Target API: $API (Android 8.0+)"
 echo " Kodek: FDK-AAC, SVT-AV1, x264, x265, Opus, MediaCodec"
 echo "=========================================================="
 
-./build-ffmpeg \
+SKIPINSTALL=yes SKIPRAV1E=yes ./build-ffmpeg \
+  --build \
   --enable-gpl-and-non-free \
   --target-os=android \
   --arch=arm64 \
