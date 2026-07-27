@@ -354,6 +354,7 @@ jobs:
             ```
 
             ### Permanent Download Links
+            - **Android**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-android-arm64.tar.gz`
             - **Linux**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-linux-amd64.tar.gz`
             - **macOS**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-macos-universal.tar.gz`
             - **Windows**: `https://github.com/${{ github.repository }}/releases/download/latest/ffmpeg-windows-amd64.zip`
