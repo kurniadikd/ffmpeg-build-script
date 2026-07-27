@@ -68,7 +68,6 @@ SKIPINSTALL=yes SKIPRAV1E=yes \
   --cc="$CROSS_CC" \
   --cxx="$CROSS_CXX" \
   --ar="$CROSS_AR" \
-  --ld="$CROSS_LD" \
   --ranlib="$CROSS_RANLIB" \
   --strip="$CROSS_STRIP" \
   --enable-shared \
