@@ -1615,6 +1615,18 @@ else
   fi
 fi
 
+if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  echo ""
+  echo "=========================================================="
+  echo " Android NDK Build Completed Successfully!"
+  echo " Shared (.so) and static libraries built in:"
+  echo " - $WORKSPACE/lib/"
+  echo " - $WORKSPACE/include/"
+  echo " Copy .so files to app/src/main/jniLibs/arm64-v8a/"
+  echo "=========================================================="
+  exit 0
+fi
+
 verify_binary_type
 
 echo ""
