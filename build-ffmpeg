@@ -1619,17 +1619,15 @@ if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; th
   echo ""
   echo "=========================================================="
   echo " Android NDK Build Completed Successfully!"
-  echo " Shared (.so) and static libraries built in:"
-  echo " - $WORKSPACE/lib/"
-  echo " - $WORKSPACE/include/"
   echo "=========================================================="
   mkdir -p "$WORKSPACE/bin"
-  if [ -f "ffmpeg" ]; then
-    cp ffmpeg "$WORKSPACE/bin/ffmpeg"
-    echo "Cross-compiled ARM64 binary saved to: $WORKSPACE/bin/ffmpeg"
-  fi
-  if [ -f "ffprobe" ]; then
-    cp ffprobe "$WORKSPACE/bin/ffprobe"
+  ARM64_FFMPEG=$(find "$PACKAGES" -maxdepth 3 -name "ffmpeg" -type f -path "*/FFmpeg*/*" 2>/dev/null | head -n 1)
+  if [ -n "$ARM64_FFMPEG" ] && [ -f "$ARM64_FFMPEG" ]; then
+    cp "$ARM64_FFMPEG" "$WORKSPACE/bin/ffmpeg"
+    echo "Cross-compiled ARM64 ffmpeg binary saved from $ARM64_FFMPEG to $WORKSPACE/bin/ffmpeg"
+  else
+    echo "ERROR: Cross-compiled ARM64 ffmpeg binary not found in packages!" >&2
+    exit 1
   fi
   exit 0
 fi

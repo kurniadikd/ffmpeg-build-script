@@ -217,12 +217,17 @@ jobs:
       - name: Validate build output
         run: |
           echo "=== Checking build output ==="
-          ls -lah workspace/ || true
-          find workspace/ -name '*.so' | head -20 || true
-          SO_COUNT=$(find workspace/ -name '*.so' | wc -l)
-          echo "Found $SO_COUNT shared library (.so) files"
-          if [ "$SO_COUNT" -eq 0 ]; then
-            echo "ERROR: No .so files found — Android build likely failed!"
+          ls -lah workspace/bin/ffmpeg || true
+          if [ -f workspace/bin/ffmpeg ]; then
+            readelf -h workspace/bin/ffmpeg
+            MACHINE=$(readelf -h workspace/bin/ffmpeg | grep "Machine:" || true)
+            echo "FFmpeg Machine: $MACHINE"
+            if ! echo "$MACHINE" | grep -q "AArch64"; then
+              echo "ERROR: workspace/bin/ffmpeg is NOT AArch64! Architecture mismatch!"
+              exit 1
+            fi
+          else
+            echo "ERROR: workspace/bin/ffmpeg does not exist!"
             exit 1
           fi
 
