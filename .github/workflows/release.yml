@@ -208,6 +208,7 @@ jobs:
 
       - name: Build Android FFmpeg (arm64-v8a)
         run: |
+          rm -rf workspace/ packages/
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           chmod +x ./build-android-arm64.sh ./build-ffmpeg
           ./build-android-arm64.sh

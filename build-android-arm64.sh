@@ -78,3 +78,14 @@ SKIPINSTALL=yes SKIPRAV1E=yes \
   --enable-libfdk-aac \
   --enable-libsvtav1 \
   --skip-install
+
+echo "=== Copying cross-compiled ARM64 ffmpeg binary ==="
+mkdir -p workspace/bin
+if [ -f packages/FFmpeg-8.1.2/ffmpeg ]; then
+  cp packages/FFmpeg-8.1.2/ffmpeg workspace/bin/ffmpeg
+elif [ -f packages/FFmpeg-release-8.1.2/ffmpeg ]; then
+  cp packages/FFmpeg-release-8.1.2/ffmpeg workspace/bin/ffmpeg
+fi
+find packages/ -name "ffmpeg" -type f -exec cp {} workspace/bin/ffmpeg \; 2>/dev/null || true
+chmod +x workspace/bin/ffmpeg 2>/dev/null || true
+echo "Build finished. Binary at workspace/bin/ffmpeg"
