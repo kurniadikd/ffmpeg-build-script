@@ -429,6 +429,17 @@ while (($# > 0)); do
         exit 1
       fi
     fi
+    # Forward cross-compilation and extra flags to FFmpeg's ./configure
+    if [[ "$1" =~ ^--(target-os|arch|cpu|cc|cxx|ar|ld|ranlib|strip|sysroot|extra-cflags|extra-ldflags)= ]]; then
+      CONFIGURE_OPTIONS+=("$1")
+    elif [[ "$1" =~ ^--enable- || "$1" =~ ^--disable- ]]; then
+      # Avoid duplicate flags if handled above
+      if [[ "$1" != "--enable-gpl-and-non-free" && "$1" != "--disable-lv2" ]]; then
+        CONFIGURE_OPTIONS+=("$1")
+      fi
+    elif [[ "$1" == "--enable-cross-compile" ]]; then
+      CONFIGURE_OPTIONS+=("$1")
+    fi
     shift
     ;;
   *)
@@ -1619,15 +1630,17 @@ if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; th
   echo ""
   echo "=========================================================="
   echo " Android NDK Build Completed Successfully!"
+  echo " Shared (.so) and static libraries built in:"
+  echo " - $WORKSPACE/lib/"
+  echo " - $WORKSPACE/include/"
   echo "=========================================================="
   mkdir -p "$WORKSPACE/bin"
-  ARM64_FFMPEG=$(find "$PACKAGES" -maxdepth 3 -name "ffmpeg" -type f -path "*/FFmpeg*/*" 2>/dev/null | head -n 1)
-  if [ -n "$ARM64_FFMPEG" ] && [ -f "$ARM64_FFMPEG" ]; then
-    cp "$ARM64_FFMPEG" "$WORKSPACE/bin/ffmpeg"
-    echo "Cross-compiled ARM64 ffmpeg binary saved from $ARM64_FFMPEG to $WORKSPACE/bin/ffmpeg"
-  else
-    echo "ERROR: Cross-compiled ARM64 ffmpeg binary not found in packages!" >&2
-    exit 1
+  if [ -f "ffmpeg" ]; then
+    cp ffmpeg "$WORKSPACE/bin/ffmpeg"
+    echo "Cross-compiled ARM64 binary saved to: $WORKSPACE/bin/ffmpeg"
+  fi
+  if [ -f "ffprobe" ]; then
+    cp ffprobe "$WORKSPACE/bin/ffprobe"
   fi
   exit 0
 fi
