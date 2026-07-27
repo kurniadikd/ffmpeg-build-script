@@ -429,6 +429,9 @@ while (($# > 0)); do
         exit 1
       fi
     fi
+    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$1" == "--target-os=android" ]]; then
+      EXTRALIBS="-lm -lz"
+    fi
     # Forward cross-compilation and extra flags to FFmpeg's ./configure
     if [[ "$1" =~ ^--(target-os|arch|cpu|cc|cxx|ar|ld|ranlib|strip|sysroot|extra-cflags|extra-ldflags)= ]]; then
       CONFIGURE_OPTIONS+=("$1")
