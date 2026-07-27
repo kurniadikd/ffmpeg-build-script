@@ -12,6 +12,9 @@ if [ -z "$ANDROID_NDK_HOME" ]; then
   exit 1
 fi
 
+# Clean previous build workspace to avoid contamination with x86_64 host libraries (e.g. liblcms2.a)
+rm -rf workspace packages
+
 # ─── Target Platform ────────────────────────────────────────────────────────
 export API=26
 export ARCH=arm64
