@@ -210,19 +210,37 @@ jobs:
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           chmod +x ./build-android-arm64.sh ./build-ffmpeg
-          ./build-android-arm64.sh || true
-          kill %1
+          ./build-android-arm64.sh
+          kill %1 2>/dev/null || true
+
+      - name: Validate build output
+        run: |
+          echo "=== Checking build output ==="
+          ls -lah workspace/ || true
+          find workspace/ -name '*.so' | head -20 || true
+          SO_COUNT=$(find workspace/ -name '*.so' | wc -l)
+          echo "Found $SO_COUNT shared library (.so) files"
+          if [ "$SO_COUNT" -eq 0 ]; then
+            echo "ERROR: No .so files found — Android build likely failed!"
+            exit 1
+          fi
 
       - name: Prepare release assets
         run: |
           mkdir -p release-android
-          cp -r workspace/lib/ release-android/ || true
-          cp -r workspace/include/ release-android/ || true
-          cp workspace/bin/ffmpeg release-android/ || true
+          cp -r workspace/lib/ release-android/ 2>/dev/null || true
+          cp -r workspace/include/ release-android/ 2>/dev/null || true
+          if [ -f workspace/bin/ffmpeg ]; then
+            cp workspace/bin/ffmpeg release-android/
+          fi
+          echo "=== Files to be packaged ==="
+          find release-android/ -type f | head -30
           cd release-android
-          tar -czvf ../ffmpeg-android-arm64.tar.gz *
+          tar -czvf ../ffmpeg-android-arm64.tar.gz .
           cd ..
           sha256sum ffmpeg-android-arm64.tar.gz > ffmpeg-android-arm64.tar.gz.sha256
+          echo "=== Final archive info ==="
+          ls -lah ffmpeg-android-arm64.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
