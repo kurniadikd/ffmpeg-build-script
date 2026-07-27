@@ -217,17 +217,17 @@ jobs:
       - name: Validate build output
         run: |
           echo "=== Checking build output ==="
-          ls -lah workspace/bin/ffmpeg || true
+          ls -lah workspace/ || true
           if [ -f workspace/bin/ffmpeg ]; then
+            echo "=== Validating ARM64 ELF Architecture ==="
             readelf -h workspace/bin/ffmpeg
-            MACHINE=$(readelf -h workspace/bin/ffmpeg | grep "Machine:" || true)
-            echo "FFmpeg Machine: $MACHINE"
-            if ! echo "$MACHINE" | grep -q "AArch64"; then
-              echo "ERROR: workspace/bin/ffmpeg is NOT AArch64! Architecture mismatch!"
+            if ! readelf -h workspace/bin/ffmpeg | grep -qE "AArch64|183"; then
+              echo "ERROR: workspace/bin/ffmpeg is NOT ARM64 (AArch64)!"
               exit 1
             fi
+            echo "SUCCESS: workspace/bin/ffmpeg verified as genuine ARM64!"
           else
-            echo "ERROR: workspace/bin/ffmpeg does not exist!"
+            echo "ERROR: workspace/bin/ffmpeg binary not found!"
             exit 1
           fi
 

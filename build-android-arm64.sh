@@ -81,11 +81,29 @@ SKIPINSTALL=yes SKIPRAV1E=yes \
 
 echo "=== Copying cross-compiled ARM64 ffmpeg binary ==="
 mkdir -p workspace/bin
-if [ -f packages/FFmpeg-8.1.2/ffmpeg ]; then
-  cp packages/FFmpeg-8.1.2/ffmpeg workspace/bin/ffmpeg
-elif [ -f packages/FFmpeg-release-8.1.2/ffmpeg ]; then
-  cp packages/FFmpeg-release-8.1.2/ffmpeg workspace/bin/ffmpeg
+FFMPEG_SRC_BIN=""
+for path in packages/FFmpeg-*/ffmpeg packages/FFmpeg-release-*/ffmpeg; do
+  if [ -f "$path" ]; then
+    FFMPEG_SRC_BIN="$path"
+    break
+  fi
+done
+
+if [ -n "$FFMPEG_SRC_BIN" ]; then
+  cp "$FFMPEG_SRC_BIN" workspace/bin/ffmpeg
+  chmod +x workspace/bin/ffmpeg
+  echo "Copied $FFMPEG_SRC_BIN to workspace/bin/ffmpeg"
+else
+  echo "ERROR: Could not locate compiled ffmpeg binary in packages/!" >&2
+  exit 1
 fi
-find packages/ -name "ffmpeg" -type f -exec cp {} workspace/bin/ffmpeg \; 2>/dev/null || true
-chmod +x workspace/bin/ffmpeg 2>/dev/null || true
-echo "Build finished. Binary at workspace/bin/ffmpeg"
+
+echo "=== Validating ARM64 ELF Architecture ==="
+if command -v readelf >/dev/null 2>&1; then
+  readelf -h workspace/bin/ffmpeg
+  if ! readelf -h workspace/bin/ffmpeg | grep -qE "AArch64|183"; then
+    echo "ERROR: workspace/bin/ffmpeg is NOT ARM64 (AArch64)!" >&2
+    exit 1
+  fi
+  echo "SUCCESS: Verified workspace/bin/ffmpeg is genuine ARM64 (AArch64)!"
+fi
