@@ -77,6 +77,7 @@ SKIPINSTALL=yes SKIPRAV1E=yes \
   --disable-static \
   --enable-jni \
   --enable-mediacodec \
+  --disable-ffplay \
   --enable-libfdk-aac \
   --enable-libsvtav1 \
   --skip-install

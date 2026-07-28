@@ -1357,13 +1357,15 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if build "libsdl" "2.32.10"; then
-  download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  execute make -j "$MJOBS"
-  execute make install
+if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+  if build "libsdl" "2.32.10"; then
+    download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
 
-  build_done "libsdl" $CURRENT_PACKAGE_VERSION
+    build_done "libsdl" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
 if build "FreeType2" "2.14.3"; then
