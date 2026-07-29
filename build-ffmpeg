@@ -783,7 +783,12 @@ if command_exists "python3"; then
         export CFLAGS="-arch arm64"
       fi
 
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
+          --cross-file="$GITHUB_WORKSPACE/android-arm64.ini"
+      else
+        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      fi
       execute ninja -C build
       execute ninja -C build install
 
