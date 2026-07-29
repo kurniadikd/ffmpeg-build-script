@@ -1088,6 +1088,10 @@ fi
 ##
 ## audio library
 ##
+if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  DISABLE_LV2=true
+fi
+
 if ! $DISABLE_LV2 ; then
 
   if command_exists "python3"; then
