@@ -1271,10 +1271,11 @@ if $NONFREE_AND_GPL; then
   if build "fdk_aac" "2.0.3"; then
     download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz"
     if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+      sed -i 's/#include "log\/log.h"/\/\/ #include "log\/log.h"/g' libSBRdec/src/lpp_tran.cpp 2>/dev/null || true
       execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
         CPPFLAGS="-DANDROID ${CPPFLAGS:-}" CFLAGS="-DANDROID -fPIC ${CFLAGS:-}" CXXFLAGS="-DANDROID -fPIC ${CXXFLAGS:-}" \
         CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
-      execute make -j "$MJOBS" CFLAGS="-DANDROID -fPIC" CXXFLAGS="-DANDROID -fPIC" CPPFLAGS="-DANDROID"
+      env CFLAGS="-DANDROID -fPIC" CXXFLAGS="-DANDROID -fPIC" CPPFLAGS="-DANDROID" make -j "$MJOBS"
     else
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
       execute make -j "$MJOBS"
