@@ -1274,10 +1274,11 @@ if $NONFREE_AND_GPL; then
       execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
         CPPFLAGS="-DANDROID ${CPPFLAGS:-}" CFLAGS="-DANDROID -fPIC ${CFLAGS:-}" CXXFLAGS="-DANDROID -fPIC ${CXXFLAGS:-}" \
         CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+      execute make -j "$MJOBS" CFLAGS="-DANDROID -fPIC" CXXFLAGS="-DANDROID -fPIC" CPPFLAGS="-DANDROID"
     else
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
+      execute make -j "$MJOBS"
     fi
-    execute make -j "$MJOBS"
     execute make install
 
     build_done "fdk_aac" $CURRENT_PACKAGE_VERSION
