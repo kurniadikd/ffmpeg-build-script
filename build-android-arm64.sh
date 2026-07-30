@@ -34,12 +34,12 @@ TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG"
 
 # ─── Cross-compiler tools (NOT exported globally so host tools like pkg-config
 #     still compile natively with the system CC) ────────────────────────────
-CROSS_CC="$TOOLCHAIN/bin/${TARGET}${API}-clang"
-CROSS_CXX="$TOOLCHAIN/bin/${TARGET}${API}-clang++"
-CROSS_AR="$TOOLCHAIN/bin/llvm-ar"
-CROSS_LD="$TOOLCHAIN/bin/ld.lld"
-CROSS_RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
-CROSS_STRIP="$TOOLCHAIN/bin/llvm-strip"
+export CROSS_CC="$TOOLCHAIN/bin/${TARGET}${API}-clang"
+export CROSS_CXX="$TOOLCHAIN/bin/${TARGET}${API}-clang++"
+export CROSS_AR="$TOOLCHAIN/bin/llvm-ar"
+export CROSS_LD="$TOOLCHAIN/bin/ld.lld"
+export CROSS_RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
+export CROSS_STRIP="$TOOLCHAIN/bin/llvm-strip"
 
 # ─── Generate Meson Cross-file for Android ARM64 ─────────────────────────────
 CROSS_FILE="$(pwd)/android-arm64.ini"
