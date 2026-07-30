@@ -41,6 +41,41 @@ CROSS_LD="$TOOLCHAIN/bin/ld.lld"
 CROSS_RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
 CROSS_STRIP="$TOOLCHAIN/bin/llvm-strip"
 
+# ─── Generate Meson Cross-file for Android ARM64 ─────────────────────────────
+CROSS_FILE="$(pwd)/android-arm64.ini"
+cat > "$CROSS_FILE" << EOF
+[binaries]
+c = '$CROSS_CC'
+cpp = '$CROSS_CXX'
+ar = '$CROSS_AR'
+ranlib = '$CROSS_RANLIB'
+strip = '$CROSS_STRIP'
+pkg-config = 'pkg-config'
+
+[built-in options]
+c_args = ['-fPIC', '-DANDROID', '--sysroot=$TOOLCHAIN/sysroot']
+cpp_args = ['-fPIC', '-DANDROID', '--sysroot=$TOOLCHAIN/sysroot']
+c_link_args = ['--sysroot=$TOOLCHAIN/sysroot']
+cpp_link_args = ['--sysroot=$TOOLCHAIN/sysroot']
+
+[properties]
+sys_root = '$TOOLCHAIN/sysroot'
+growing_stack = false
+
+[build_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[host_machine]
+system = 'android'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+EOF
+export MESON_CROSS_FILE="$CROSS_FILE"
+
 # ─── Android-specific flags (exported so FFmpeg's configure picks them up) ──
 export ANDROID_BUILD=true
 

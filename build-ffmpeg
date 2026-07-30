@@ -784,8 +784,21 @@ if command_exists "python3"; then
       fi
 
       if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
-        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
-          --cross-file="$GITHUB_WORKSPACE/android-arm64.ini"
+        CROSS_INI="${MESON_CROSS_FILE:-}"
+        if [ -z "$CROSS_INI" ] || [ ! -f "$CROSS_INI" ]; then
+          if [ -f "$CWD/android-arm64.ini" ]; then
+            CROSS_INI="$CWD/android-arm64.ini"
+          elif [ -n "${GITHUB_WORKSPACE:-}" ] && [ -f "$GITHUB_WORKSPACE/android-arm64.ini" ]; then
+            CROSS_INI="$GITHUB_WORKSPACE/android-arm64.ini"
+          fi
+        fi
+        if [ -n "$CROSS_INI" ] && [ -f "$CROSS_INI" ]; then
+          execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
+            --cross-file="$CROSS_INI"
+        else
+          echo "WARNING: Could not find android-arm64.ini cross file, running meson setup without cross-file"
+          execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        fi
       else
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       fi
