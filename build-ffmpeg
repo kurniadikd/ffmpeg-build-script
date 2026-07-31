@@ -1315,7 +1315,12 @@ if build "libpng" "1.6.58"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
+      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+  else
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  fi
   execute make -j "$MJOBS"
   execute make install
 
