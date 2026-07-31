@@ -1001,7 +1001,7 @@ if build "xeve" "0.5.1"; then
   cd build || exit
   # Create version.txt for CMake (tarball lacks .git for git describe)
   echo "v$CURRENT_PACKAGE_VERSION" > ../version.txt
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
   execute make -j "$MJOBS"
   execute make install
   # XEVE builds both static and shared libs; remove shared for static ffmpeg build
