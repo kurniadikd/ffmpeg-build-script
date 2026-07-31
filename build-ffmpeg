@@ -581,6 +581,44 @@ if build "zlib" "1.3.2"; then
   build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
+if build "libpng" "1.6.58"; then
+  download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
+  export LDFLAGS="-L${WORKSPACE}/lib ${LDFLAGS:-}"
+  export CPPFLAGS="-I${WORKSPACE}/include ${CFLAGS:-}"
+  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
+      CPPFLAGS="-I${WORKSPACE}/include -DANDROID" LDFLAGS="-L${WORKSPACE}/lib" \
+      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+  else
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CPPFLAGS="-I${WORKSPACE}/include" LDFLAGS="-L${WORKSPACE}/lib"
+  fi
+  execute make -j "$MJOBS"
+  execute make install
+
+  # Fix Windows symlink issues for libpng headers, libraries and config in workspace
+  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+    echo "Replacing libpng symlinks with copies to fix Windows compiler/linker errors"
+    if [ -f "${WORKSPACE}/include/libpng16/png.h" ]; then
+      rm -f "${WORKSPACE}/include/png.h"
+      rm -f "${WORKSPACE}/include/pngconf.h"
+      rm -f "${WORKSPACE}/include/pnglibconf.h"
+      cp -f "${WORKSPACE}/include/libpng16/png.h" "${WORKSPACE}/include/png.h"
+      cp -f "${WORKSPACE}/include/libpng16/pngconf.h" "${WORKSPACE}/include/pngconf.h"
+      cp -f "${WORKSPACE}/include/libpng16/pnglibconf.h" "${WORKSPACE}/include/pnglibconf.h"
+    fi
+    if [ -f "${WORKSPACE}/lib/libpng16.a" ]; then
+      rm -f "${WORKSPACE}/lib/libpng.a"
+      cp -f "${WORKSPACE}/lib/libpng16.a" "${WORKSPACE}/lib/libpng.a"
+    fi
+    if [ -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" ]; then
+      rm -f "${WORKSPACE}/lib/pkgconfig/libpng.pc"
+      cp -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" "${WORKSPACE}/lib/pkgconfig/libpng.pc"
+    fi
+  fi
+
+  build_done "libpng" $CURRENT_PACKAGE_VERSION
+fi
+
 if ! command_exists "m4" || ! m4 --version >/dev/null 2>&1 || ! version_satisfies "$(m4 --version 2>&1 | head -n 1 | awk '{print $NF}')" "1.4.8"; then
   if build "m4" "1.4.21"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
@@ -1311,42 +1349,7 @@ if build "libtiff" "4.7.1"; then
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.58"; then
-  download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
-  export LDFLAGS="${LDFLAGS}"
-  export CPPFLAGS="${CFLAGS}"
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
-    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
-      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
-  else
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  fi
-  execute make -j "$MJOBS"
-  execute make install
 
-  # Fix Windows symlink issues for libpng headers, libraries and config in workspace
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-    echo "Replacing libpng symlinks with copies to fix Windows compiler/linker errors"
-    if [ -f "${WORKSPACE}/include/libpng16/png.h" ]; then
-      rm -f "${WORKSPACE}/include/png.h"
-      rm -f "${WORKSPACE}/include/pngconf.h"
-      rm -f "${WORKSPACE}/include/pnglibconf.h"
-      cp -f "${WORKSPACE}/include/libpng16/png.h" "${WORKSPACE}/include/png.h"
-      cp -f "${WORKSPACE}/include/libpng16/pngconf.h" "${WORKSPACE}/include/pngconf.h"
-      cp -f "${WORKSPACE}/include/libpng16/pnglibconf.h" "${WORKSPACE}/include/pnglibconf.h"
-    fi
-    if [ -f "${WORKSPACE}/lib/libpng16.a" ]; then
-      rm -f "${WORKSPACE}/lib/libpng.a"
-      cp -f "${WORKSPACE}/lib/libpng16.a" "${WORKSPACE}/lib/libpng.a"
-    fi
-    if [ -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" ]; then
-      rm -f "${WORKSPACE}/lib/pkgconfig/libpng.pc"
-      cp -f "${WORKSPACE}/lib/pkgconfig/libpng16.pc" "${WORKSPACE}/lib/pkgconfig/libpng.pc"
-    fi
-  fi
-
-  build_done "libpng" $CURRENT_PACKAGE_VERSION
-fi
 
 if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
   if build "lcms2" "2.19.1"; then
