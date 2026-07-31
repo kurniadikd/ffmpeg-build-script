@@ -1405,7 +1405,12 @@ fi
 
 if build "FreeType2" "2.14.3"; then
   download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
+      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+  else
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  fi
   execute make -j "$MJOBS"
   execute make install
   build_done "FreeType2" $CURRENT_PACKAGE_VERSION
