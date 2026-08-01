@@ -973,12 +973,12 @@ EOF
 fi
 
 if $NONFREE_AND_GPL; then
-  if [[ "$(uname -m)" == "x86_64" ]]; then
+  if [[ "$(uname -m)" == "x86_64" ]] && [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
     if build "svthevc" "1.5.1"; then
       download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
       cd build || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-error" .. -G"Unix Makefiles"
+      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-error" .. -G"Unix Makefiles"
       execute make -j "$MJOBS"
       execute make install
       build_done "svthevc" $CURRENT_PACKAGE_VERSION
@@ -987,7 +987,7 @@ if $NONFREE_AND_GPL; then
   fi
 fi
 
-if [[ "$(uname -m)" == "x86_64" ]]; then
+if [[ "$(uname -m)" == "x86_64" ]] && [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
   if build "svtvp9" "0.3.1"; then
     download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
     make_dir build
