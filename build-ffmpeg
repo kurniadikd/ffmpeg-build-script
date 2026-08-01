@@ -1000,18 +1000,14 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
   CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 fi
 
-if [[ "$OSTYPE" != "darwin"* ]]; then
+if [[ "$OSTYPE" != "darwin"* ]] && [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
   if build "xeve" "0.5.1"; then
     download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
     make_dir build
     cd build || exit
     # Create version.txt for CMake (tarball lacks .git for git describe)
     echo "v$CURRENT_PACKAGE_VERSION" > ../version.txt
-    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
-      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .. -G"Unix Makefiles"
-    else
-      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
-    fi
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
     execute make -j "$MJOBS"
     execute make install
     # XEVE builds both static and shared libs; remove shared for static ffmpeg build
