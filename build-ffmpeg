@@ -17,6 +17,7 @@ EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_SILICON=false
 CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
+ANDROID_BUILD=${ANDROID_BUILD:-false}
 DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
@@ -429,7 +430,10 @@ while (($# > 0)); do
         exit 1
       fi
     fi
-    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$1" == "--target-os=android" ]]; then
+    if [[ "$1" == "--target-os=android"* ]]; then
+      ANDROID_BUILD=true
+    fi
+    if [[ "$ANDROID_BUILD" == "true" ]]; then
       EXTRALIBS=""
       CFLAGS="-I$WORKSPACE/include -fPIC -DANDROID"
       LDFLAGS="-L$WORKSPACE/lib"
@@ -575,7 +579,7 @@ fi
 
 if build "zlib" "1.3.2"; then
   download "https://github.com/madler/zlib/releases/download/v$CURRENT_PACKAGE_VERSION/zlib-$CURRENT_PACKAGE_VERSION.tar.gz"
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" CFLAGS="-fPIC -DANDROID" \
       execute ./configure --static --prefix="${WORKSPACE}"
   else
@@ -590,7 +594,7 @@ if build "libpng" "1.6.58"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="-L${WORKSPACE}/lib ${LDFLAGS:-}"
   export CPPFLAGS="-I${WORKSPACE}/include ${CFLAGS:-}"
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" \
       CPPFLAGS="-I${WORKSPACE}/include -DANDROID" LDFLAGS="-L${WORKSPACE}/lib" \
       execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic
@@ -826,7 +830,7 @@ if command_exists "python3"; then
         export CFLAGS="-arch arm64"
       fi
 
-      if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+      if [[ "$ANDROID_BUILD" == "true" ]]; then
         CROSS_INI="${MESON_CROSS_FILE:-}"
         if [ -z "$CROSS_INI" ] || [ ! -f "$CROSS_INI" ]; then
           if [ -f "$CWD/android-arm64.ini" ]; then
@@ -839,18 +843,15 @@ if command_exists "python3"; then
           execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
             --cross-file="$CROSS_INI"
         else
-          echo "WARNING: Could not find android-arm64.ini cross file, running meson setup without cross-file"
           execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         fi
+      elif $MACOS_SILICON; then
+        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       else
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       fi
       execute ninja -C build
       execute ninja -C build install
-
-      if $MACOS_SILICON; then
-        export CFLAGS=$CFLAGSBACKUP
-      fi
 
       build_done "dav1d" $CURRENT_PACKAGE_VERSION
     fi
@@ -973,7 +974,7 @@ EOF
 fi
 
 if $NONFREE_AND_GPL; then
-  if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" != "true" ]]; then
     if build "svthevc" "1.5.1"; then
       download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
@@ -987,7 +988,7 @@ if $NONFREE_AND_GPL; then
   fi
 fi
 
-if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]]; then
   if build "svtvp9" "0.3.1"; then
     download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
     make_dir build
@@ -1006,7 +1007,7 @@ if build "xeve" "0.5.1"; then
   cd build || exit
   # Create version.txt for CMake (tarball lacks .git for git describe)
   echo "v$CURRENT_PACKAGE_VERSION" > ../version.txt
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error -DXEVE_USE_AVX=0 -DXEVE_USE_SSE=0" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .. -G"Unix Makefiles"
   else
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
@@ -1095,7 +1096,7 @@ if $NONFREE_AND_GPL; then
       patch -p1 <fix_cmake_quoting.patch
     fi
 
-    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+    if [[ "$ANDROID_BUILD" == "true" ]]; then
       execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .
     else
       execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
@@ -1112,7 +1113,7 @@ if build "av1" "3.14.1"; then
   download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=OFF -DCONFIG_PIC=1 -DAOM_TARGET_CPU=arm64 -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
   elif $MACOS_SILICON; then
     execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
@@ -1141,7 +1142,7 @@ CONFIGURE_OPTIONS+=("--enable-libzimg")
 if build "libvmaf" "3.2.0"; then
   download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "libvmaf" || exit
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     cat > android-arm64.ini << EOF
 [binaries]
 c = '$CC'
@@ -1178,7 +1179,7 @@ fi
 ##
 ## audio library
 ##
-if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+if [[ "$ANDROID_BUILD" == "true" ]]; then
   DISABLE_LV2=true
 fi
 
@@ -1342,7 +1343,7 @@ CONFIGURE_OPTIONS+=("--enable-libtheora")
 if $NONFREE_AND_GPL; then
   if build "fdk_aac" "2.0.3"; then
     download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz"
-    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+    if [[ "$ANDROID_BUILD" == "true" ]]; then
       sed -i 's/#include "log\/log.h"/\/\/ #include "log\/log.h"/g' libSBRdec/src/lpp_tran.cpp 2>/dev/null || true
       sed -i 's/android_errorWriteLog/(void)/g' libSBRdec/src/lpp_tran.cpp 2>/dev/null || true
       execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
@@ -1385,7 +1386,7 @@ if build "libtiff" "4.7.1"; then
 fi
 
 
-if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]]; then
   if build "lcms2" "2.19.1"; then
     download "https://github.com/mm2/Little-CMS/releases/download/lcms$CURRENT_PACKAGE_VERSION/lcms2-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -1434,7 +1435,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]]; then
   if build "libsdl" "2.32.10"; then
     download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -1447,7 +1448,7 @@ fi
 
 if build "FreeType2" "2.14.3"; then
   download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
     execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --enable-pic \
       CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
   else
@@ -1715,7 +1716,7 @@ else
   fi
 fi
 
-if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
+if [[ "$ANDROID_BUILD" == "true" ]]; then
   echo ""
   echo "=========================================================="
   echo " Android NDK Build Completed Successfully!"
