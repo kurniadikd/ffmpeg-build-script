@@ -513,11 +513,11 @@ fi
 ##
 
 if build "giflib" "5.2.2"; then
-  # giflib Makefile uses Linux-specific flags (-soname, .so) that don't work on Windows/MinGW
+  # giflib Makefile uses Linux-specific flags (-soname, .so) that don't work on Windows/macOS/Android
   # FFmpeg has native GIF encoder/decoder, so giflib is not needed
   UNAME_S="$(uname -s 2>/dev/null || true)"
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-    echo "Skipping giflib on Windows (FFmpeg has native GIF support)"
+  if [[ "$OSTYPE" == "darwin"* ]] || [[ "$ANDROID_BUILD" == "true" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping giflib (FFmpeg has native GIF support)"
     build_done "giflib" $CURRENT_PACKAGE_VERSION
   else
     download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-5.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -902,9 +902,9 @@ if $NONFREE_AND_GPL; then
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
     if [[ "$ANDROID_BUILD" == "true" ]]; then
-      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
+      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" AS="$CROSS_CC" \
         execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic --disable-cli --disable-opencl \
-        --host=aarch64-linux-android --sysroot="$TOOLCHAIN/sysroot" --cross-prefix="$TOOLCHAIN/bin/llvm-" --extra-cflags="-fPIC -DANDROID"
+        --host=aarch64-linux-android --sysroot="$TOOLCHAIN/sysroot" --extra-cflags="-fPIC -DANDROID"
     elif [[ "$OSTYPE" == "linux-gnu" ]]; then
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
     else
@@ -953,7 +953,7 @@ if $NONFREE_AND_GPL; then
       execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_ASSEMBLY=OFF -DENABLE_CLI=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
       execute make -j "$MJOBS"
       mv libx265.a libx265_main.a
-      execute "$CROSS_AR" -M <<'EOF'
+      cat > ar.mri <<'EOF'
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -961,6 +961,7 @@ ADDLIB libx265_main12.a
 SAVE
 END
 EOF
+      "$CROSS_AR" -M < ar.mri
     else
       cd 12bit || exit
       execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
@@ -983,12 +984,12 @@ EOF
       mv libx265.a libx265_main.a
 
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+        execute /usr/bin/libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null || execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
       elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
         # On Windows, use libtool to combine static libraries
         execute libtool.exe -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
       else
-        execute ar -M <<'EOF'
+        cat > ar.mri <<'EOF'
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -996,6 +997,7 @@ ADDLIB libx265_main12.a
 SAVE
 END
 EOF
+        ar -M < ar.mri
       fi
     fi
 
@@ -1011,7 +1013,7 @@ EOF
 fi
 
 if $NONFREE_AND_GPL; then
-  if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64" ]]; then
     if build "svthevc" "1.5.1"; then
       download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
@@ -1025,7 +1027,7 @@ if $NONFREE_AND_GPL; then
   fi
 fi
 
-if [[ "$ANDROID_BUILD" != "true" ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64" ]]; then
   if build "svtvp9" "0.3.1"; then
     download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
     make_dir build
