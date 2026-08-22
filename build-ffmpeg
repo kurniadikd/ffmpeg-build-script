@@ -1191,13 +1191,15 @@ if build "libvmaf" "3.2.0"; then
   download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "libvmaf" || exit
   if [[ "$ANDROID_BUILD" == "true" ]]; then
-    cat > android-arm64.ini << EOF
+    CROSS_INI="${MESON_CROSS_FILE:-}"
+    if [ -z "$CROSS_INI" ] || [ ! -f "$CROSS_INI" ]; then
+      cat > android-arm64.ini << EOF
 [binaries]
-c = '$CC'
-cpp = '$CXX'
-ar = '$AR'
-ranlib = '$RANLIB'
-strip = '$STRIP'
+c = '${CROSS_CC:-$CC}'
+cpp = '${CROSS_CXX:-$CXX}'
+ar = '${CROSS_AR:-$AR}'
+ranlib = '${CROSS_RANLIB:-$RANLIB}'
+strip = '${CROSS_STRIP:-$STRIP}'
 
 [properties]
 needs_exe_wrapper = true
@@ -1208,7 +1210,9 @@ cpu_family = 'aarch64'
 cpu = 'aarch64'
 endian = 'little'
 EOF
-    execute meson setup build --cross-file android-arm64.ini --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true -Dasm=disabled
+      CROSS_INI="android-arm64.ini"
+    fi
+    execute meson setup build --cross-file "$CROSS_INI" --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true -Dasm=disabled
   else
     execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
   fi
@@ -1218,7 +1222,7 @@ EOF
 fi
 CONFIGURE_OPTIONS+=("--enable-libvmaf")
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$OSTYPE" == "darwin"* ]]; then
   EXTRALIBS="${EXTRALIBS} -lc++"
 else
   EXTRALIBS="${EXTRALIBS} -lstdc++"
@@ -1626,7 +1630,7 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
   fi
 fi
 
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
+if [[ "$OSTYPE" == "linux-gnu" ]] && [[ "$ANDROID_BUILD" != "true" ]]; then
   if command_exists "nvcc"; then
     if build "nv-codec" "13.0.19.0"; then
       download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
