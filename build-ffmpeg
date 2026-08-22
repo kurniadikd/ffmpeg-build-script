@@ -536,10 +536,8 @@ fi
 
 if build "pkg-config" "0.29.2"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-    # MSYS2 provides pkg-config natively, no need to build from source
-    # Also avoids GCC 16+ 'bool' keyword conflict with old glib
-    echo "Skipping pkg-config on Windows (MSYS2 provides it natively)"
+  if command_exists "pkg-config" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping pkg-config build (system provides it)"
     build_done "pkg-config" $CURRENT_PACKAGE_VERSION
   else
     download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -557,8 +555,8 @@ fi
 
 if build "yasm" "1.3.0"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-    echo "Skipping yasm on Windows (MSYS2 provides it natively)"
+  if command_exists "yasm" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping yasm build (system provides it)"
     build_done "yasm" $CURRENT_PACKAGE_VERSION
   else
     download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -570,11 +568,16 @@ if build "yasm" "1.3.0"; then
 fi
 
 if build "nasm" "3.01"; then
-  download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "nasm" $CURRENT_PACKAGE_VERSION
+  if command_exists "nasm"; then
+    echo "Skipping nasm build (system provides it)"
+    build_done "nasm" $CURRENT_PACKAGE_VERSION
+  else
+    download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "nasm" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
 if build "zlib" "1.3.2"; then
@@ -726,14 +729,16 @@ if $NONFREE_AND_GPL; then
     ln -sf "$(which autopoint)" "${WORKSPACE}/bin/autopoint"
   fi
 
-  if build "openssl" "4.0.1"; then
-    download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
-    execute make -j "$MJOBS"
-    execute make install_sw
-    build_done "openssl" $CURRENT_PACKAGE_VERSION
+  if [[ "$ANDROID_BUILD" != "true" ]]; then
+    if build "openssl" "4.0.1"; then
+      download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+      execute make -j "$MJOBS"
+      execute make install_sw
+      build_done "openssl" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-openssl")
   fi
-  CONFIGURE_OPTIONS+=("--enable-openssl")
 else
   if build "gmp" "6.3.0"; then
     download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
@@ -765,8 +770,8 @@ fi
 
 if build "cmake" "4.3.4"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-    echo "Skipping cmake build on Windows (MSYS2 provides cmake natively)"
+  if command_exists "cmake" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
+    echo "Skipping cmake build (system provides it)"
     build_done "cmake" $CURRENT_PACKAGE_VERSION
   else
     CXXFLAGS_BACKUP=$CXXFLAGS
@@ -863,7 +868,11 @@ if build "svtav1" "4.1.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+  else
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+  fi
   execute make -j "$MJOBS"
   execute make install
   execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
@@ -892,7 +901,11 @@ if $NONFREE_AND_GPL; then
     download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    if [[ "$ANDROID_BUILD" == "true" ]]; then
+      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
+        execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic --disable-cli --disable-opencl \
+        --host=aarch64-linux-android --sysroot="$TOOLCHAIN/sysroot" --cross-prefix="$TOOLCHAIN/bin/llvm-" --extra-cflags="-fPIC -DANDROID"
+    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
     else
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
@@ -926,33 +939,21 @@ if $NONFREE_AND_GPL; then
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
     mkdir -p 8bit 10bit 12bit
-    cd 12bit || exit
-    execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
-    execute make -j "$MJOBS"
-    cd ../10bit || exit
-    execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
-    execute make -j "$MJOBS"
-    cd ../8bit || exit
-    # Use cp instead of ln -sf on Windows for compatibility
-    cp ../10bit/libx265.a libx265_main10.a
-    cp ../12bit/libx265.a libx265_main12.a
-    # On Windows, -ldl is not needed (dl functions are in kernel32)
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
-    else
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
-    fi
-    execute make -j "$MJOBS"
 
-    mv libx265.a libx265_main.a
-
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-      # On Windows, use libtool to combine static libraries
-      execute libtool.exe -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
-    else
-      execute ar -M <<'EOF'
+    if [[ "$ANDROID_BUILD" == "true" ]]; then
+      cd 12bit || exit
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF -DMAIN12=ON
+      execute make -j "$MJOBS"
+      cd ../10bit || exit
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF
+      execute make -j "$MJOBS"
+      cd ../8bit || exit
+      cp ../10bit/libx265.a libx265_main10.a
+      cp ../12bit/libx265.a libx265_main12.a
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_ASSEMBLY=OFF -DENABLE_CLI=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+      execute make -j "$MJOBS"
+      mv libx265.a libx265_main.a
+      execute "$CROSS_AR" -M <<'EOF'
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -960,6 +961,42 @@ ADDLIB libx265_main12.a
 SAVE
 END
 EOF
+    else
+      cd 12bit || exit
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+      execute make -j "$MJOBS"
+      cd ../10bit || exit
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+      execute make -j "$MJOBS"
+      cd ../8bit || exit
+      # Use cp instead of ln -sf on Windows for compatibility
+      cp ../10bit/libx265.a libx265_main10.a
+      cp ../12bit/libx265.a libx265_main12.a
+      # On Windows, -ldl is not needed (dl functions are in kernel32)
+      if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+      else
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+      fi
+      execute make -j "$MJOBS"
+
+      mv libx265.a libx265_main.a
+
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+      elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+        # On Windows, use libtool to combine static libraries
+        execute libtool.exe -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
+      else
+        execute ar -M <<'EOF'
+CREATE libx265.a
+ADDLIB libx265_main.a
+ADDLIB libx265_main10.a
+ADDLIB libx265_main12.a
+SAVE
+END
+EOF
+      fi
     fi
 
     execute make install
@@ -1024,42 +1061,46 @@ if build "xeve" "0.5.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libxeve")
 
-if build "libvpx" "1.16.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "libvpx" "1.16.0"; then
+    download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Applying Darwin patch"
-    sed "s/,--version-script//g" build/make/Makefile >build/make/Makefile.patched
-    sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
-  fi
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "Applying Darwin patch"
+      sed "s/,--version-script//g" build/make/Makefile >build/make/Makefile.patched
+      sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
+    fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
-  execute make -j "$MJOBS"
-  execute make install
-
-  build_done "libvpx" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libvpx")
-
-if $NONFREE_AND_GPL; then
-  if build "xvidcore" "1.3.7"; then
-    download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
-    cd build/generic || exit
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS="-std=gnu99 ${CFLAGS}"
+    execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
     execute make -j "$MJOBS"
     execute make install
 
-    if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
-      execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
-    fi
-
-    if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
-      execute rm "${WORKSPACE}"/lib/libxvidcore.so*
-    fi
-
-    build_done "xvidcore" $CURRENT_PACKAGE_VERSION
+    build_done "libvpx" $CURRENT_PACKAGE_VERSION
   fi
-  CONFIGURE_OPTIONS+=("--enable-libxvid")
+  CONFIGURE_OPTIONS+=("--enable-libvpx")
+fi
+
+if $NONFREE_AND_GPL; then
+  if [[ "$ANDROID_BUILD" != "true" ]]; then
+    if build "xvidcore" "1.3.7"; then
+      download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
+      cd build/generic || exit
+      execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS="-std=gnu99 ${CFLAGS}"
+      execute make -j "$MJOBS"
+      execute make install
+
+      if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
+        execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
+      fi
+
+      if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
+        execute rm "${WORKSPACE}"/lib/libxvidcore.so*
+      fi
+
+      build_done "xvidcore" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libxvid")
+  fi
 fi
 
 if $NONFREE_AND_GPL; then
@@ -1132,7 +1173,12 @@ if build "zimg" "3.0.6"; then
   cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
   execute "${WORKSPACE}/bin/libtoolize" -i -f -q
   execute ./autogen.sh --prefix="${WORKSPACE}"
-  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --enable-static --disable-shared \
+      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+  else
+    execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+  fi
   execute make -j "$MJOBS"
   execute make install
   build_done "zimg" $CURRENT_PACKAGE_VERSION
@@ -1257,29 +1303,36 @@ if ! $DISABLE_LV2 ; then
   fi
 fi
 
-if build "opencore" "0.1.6"; then
-  download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz" "opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  execute make -j "$MJOBS"
-  execute make install
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "opencore" "0.1.6"; then
+    download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz" "opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
 
-  build_done "opencore" $CURRENT_PACKAGE_VERSION
+    build_done "opencore" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
+
+  if build "lame" "3.100"; then
+    download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-frontend
+    execute make -j "$MJOBS"
+    execute make install
+
+    build_done "lame" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 fi
-CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
-
-if build "lame" "3.100"; then
-  download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-frontend
-  execute make -j "$MJOBS"
-  execute make install
-
-  build_done "lame" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
 if build "opus" "1.6.1"; then
   download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static \
+      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+  else
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  fi
   execute make -j "$MJOBS"
   execute make install
 
@@ -1287,58 +1340,59 @@ if build "opus" "1.6.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
-
-if command_exists "meson"; then
-  CURRENT_PACKAGE_VERSION="0"
-  if [ -d "$PACKAGES/liblc3" ]; then
-    cd "$PACKAGES/liblc3" || exit
-    git pull --ff-only origin main 2>/dev/null || true
-    CURRENT_PACKAGE_VERSION=$(git rev-parse --short HEAD || echo "0")
-  else
-    execute git clone --depth 1 https://github.com/google/liblc3.git "$PACKAGES/liblc3"
-    cd "$PACKAGES/liblc3" || exit
-    CURRENT_PACKAGE_VERSION=$(git rev-parse --short HEAD || echo "0")
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if command_exists "meson"; then
+    CURRENT_PACKAGE_VERSION="0"
+    if [ -d "$PACKAGES/liblc3" ]; then
+      cd "$PACKAGES/liblc3" || exit
+      git pull --ff-only origin main 2>/dev/null || true
+      CURRENT_PACKAGE_VERSION=$(git rev-parse --short HEAD || echo "0")
+    else
+      execute git clone --depth 1 https://github.com/google/liblc3.git "$PACKAGES/liblc3"
+      cd "$PACKAGES/liblc3" || exit
+      CURRENT_PACKAGE_VERSION=$(git rev-parse --short HEAD || echo "0")
+    fi
+    if build "lc3" "$CURRENT_PACKAGE_VERSION"; then
+      execute meson setup build_dir --prefix="${WORKSPACE}" --libdir="lib" --buildtype=release -Ddefault_library=static
+      execute ninja -C build_dir
+      execute ninja -C build_dir install
+      build_done "lc3" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-liblc3")
   fi
-  if build "lc3" "$CURRENT_PACKAGE_VERSION"; then
-    execute meson setup build_dir --prefix="${WORKSPACE}" --libdir="lib" --buildtype=release -Ddefault_library=static
-    execute ninja -C build_dir
-    execute ninja -C build_dir install
-    build_done "lc3" $CURRENT_PACKAGE_VERSION
+
+  if build "libogg" "1.3.6"; then
+    download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "libogg" $CURRENT_PACKAGE_VERSION
   fi
-  CONFIGURE_OPTIONS+=("--enable-liblc3")
+
+  if build "libvorbis" "1.3.7"; then
+    download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
+    sed 's/-force_cpusubtype_ALL//g' configure.ac >configure.ac.patched
+    rm configure.ac
+    mv configure.ac.patched configure.ac
+    execute ./autogen.sh --prefix="${WORKSPACE}"
+    execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
+    execute make -j "$MJOBS"
+    execute make install
+
+    build_done "libvorbis" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libvorbis")
+
+  if build "libtheora" "1.2.0"; then
+    download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-spec
+    execute make -j "$MJOBS"
+    execute make install
+
+    build_done "libtheora" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libtheora")
 fi
-
-if build "libogg" "1.3.6"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "libogg" $CURRENT_PACKAGE_VERSION
-fi
-
-if build "libvorbis" "1.3.7"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
-  sed 's/-force_cpusubtype_ALL//g' configure.ac >configure.ac.patched
-  rm configure.ac
-  mv configure.ac.patched configure.ac
-  execute ./autogen.sh --prefix="${WORKSPACE}"
-  execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
-  execute make -j "$MJOBS"
-  execute make install
-
-  build_done "libvorbis" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libvorbis")
-
-if build "libtheora" "1.2.0"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-spec
-  execute make -j "$MJOBS"
-  execute make install
-
-  build_done "libtheora" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if $NONFREE_AND_GPL; then
   if build "fdk_aac" "2.0.3"; then
@@ -1361,28 +1415,32 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
-if build "soxr" "0.1.3"; then
-  download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "soxr" "0.1.3"; then
+    download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
 
-  mkdir build && cd build
-  execute cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=off -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -Wno-dev ..
-  execute make -j "$MJOBS"
-  execute make install
+    mkdir build && cd build
+    execute cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=off -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -Wno-dev ..
+    execute make -j "$MJOBS"
+    execute make install
 
-  build_done "soxr" $CURRENT_PACKAGE_VERSION
+    build_done "soxr" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libsoxr")
 fi
-CONFIGURE_OPTIONS+=("--enable-libsoxr")
 
 ##
 ## image library
 ##
 
-if build "libtiff" "4.7.1"; then
-  download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "libtiff" $CURRENT_PACKAGE_VERSION
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "libtiff" "4.7.1"; then
+    download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "libtiff" $CURRENT_PACKAGE_VERSION
+  fi
 fi
 
 
@@ -1423,7 +1481,11 @@ if build "libwebp" "1.6.0"; then
   download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
   make_dir build
   cd build || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=ON ../
+  if [[ "$ANDROID_BUILD" == "true" ]]; then
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../
+  else
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=ON ../
+  fi
   execute make -j "$MJOBS"
   execute make install
 
@@ -1461,97 +1523,105 @@ fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
-if build "VapourSynth" "73"; then
-  # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
-  # no need to build it at compile team, only headers need to be installed
-  download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute mkdir -p "${WORKSPACE}/include/vapoursynth"
-  execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
-  build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "VapourSynth" "73"; then
+    # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
+    # no need to build it at compile team, only headers need to be installed
+    download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute mkdir -p "${WORKSPACE}/include/vapoursynth"
+    execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
+    build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
+  fi
+
+  CONFIGURE_OPTIONS+=("--enable-vapoursynth")
 fi
 
-CONFIGURE_OPTIONS+=("--enable-vapoursynth")
-
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.5.5"; then
-    download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
-    export OPENSSL_ROOT_DIR="${WORKSPACE}"
-    export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
-    export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-    execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
-    execute make install
+  if [[ "$ANDROID_BUILD" != "true" ]]; then
+    if build "srt" "1.5.5"; then
+      download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
+      export OPENSSL_ROOT_DIR="${WORKSPACE}"
+      export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
+      export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
+      execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+      execute make install
 
-    if [ -n "$LDEXEFLAGS" ]; then
-      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+      if [ -n "$LDEXEFLAGS" ]; then
+        sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+      fi
+
+      build_done "srt" $CURRENT_PACKAGE_VERSION
     fi
+    CONFIGURE_OPTIONS+=("--enable-libsrt")
 
-    build_done "srt" $CURRENT_PACKAGE_VERSION
+    if build "zvbi" "0.2.44"; then
+      download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./autogen.sh --prefix="${WORKSPACE}"
+      execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "zvbi" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libzvbi")
   fi
-  CONFIGURE_OPTIONS+=("--enable-libsrt")
-
-  if build "zvbi" "0.2.44"; then
-    download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./autogen.sh --prefix="${WORKSPACE}"
-    execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "zvbi" $CURRENT_PACKAGE_VERSION
-  fi
-  CONFIGURE_OPTIONS+=("--enable-libzvbi")
 fi
 
 ##
 ## zmq library
 ##
 
-if build "libzmq" "4.3.5"; then
-  download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
-  fi
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  sed "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g" src/proxy.cpp >src/proxy.cpp.patched
-  rm src/proxy.cpp
-  mv src/proxy.cpp.patched src/proxy.cpp
-  execute make -j "$MJOBS"
-  execute make install
-
-  # On Windows, libzmq needs -DZMQ_STATIC and -lws2_32 for static linking
-  if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-    if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
-      sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
-      mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "libzmq" "4.3.5"; then
+    download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
     fi
-  fi
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    sed "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g" src/proxy.cpp >src/proxy.cpp.patched
+    rm src/proxy.cpp
+    mv src/proxy.cpp.patched src/proxy.cpp
+    execute make -j "$MJOBS"
+    execute make install
 
-  build_done "libzmq" $CURRENT_PACKAGE_VERSION
-  CONFIGURE_OPTIONS+=("--enable-libzmq")
+    # On Windows, libzmq needs -DZMQ_STATIC and -lws2_32 for static linking
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+      if [ -f "${WORKSPACE}/lib/pkgconfig/libzmq.pc" ]; then
+        sed -e 's/^Cflags: .*/& -DZMQ_STATIC/' -e 's/^Libs: .*/& -lws2_32/' "${WORKSPACE}/lib/pkgconfig/libzmq.pc" > "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched"
+        mv "${WORKSPACE}/lib/pkgconfig/libzmq.pc.patched" "${WORKSPACE}/lib/pkgconfig/libzmq.pc"
+      fi
+    fi
+
+    build_done "libzmq" $CURRENT_PACKAGE_VERSION
+    CONFIGURE_OPTIONS+=("--enable-libzmq")
+  fi
 fi
 
 ##
 ## HWaccel library
 ##
 
-if build "vulkan-headers" "1.4.341.0"; then
-  download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
-  cd build/ || exit
-  execute make install
-  build_done "vulkan-headers" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-vulkan")
-
-# vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
-if command_exists "python3"; then
-  if build "glslang" "16.3.0"; then
-    download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./update_glslang_sources.py
-    execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
-    execute make -j "$MJOBS"
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "vulkan-headers" "1.4.341.0"; then
+    download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
+    cd build/ || exit
     execute make install
-    build_done "glslang" $CURRENT_PACKAGE_VERSION
+    build_done "vulkan-headers" $CURRENT_PACKAGE_VERSION
   fi
-  CONFIGURE_OPTIONS+=("--enable-libglslang")
+  CONFIGURE_OPTIONS+=("--enable-vulkan")
+
+  # vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
+  if command_exists "python3"; then
+    if build "glslang" "16.3.0"; then
+      download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
+      execute ./update_glslang_sources.py
+      execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "glslang" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libglslang")
+  fi
 fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -1663,7 +1733,11 @@ fi
 # This automatically handles patches (e.g., libzmq.pc) and naming fixes (e.g., libxvidcore.a)
 # and fails early if any required static libraries are missing.
 if [ -f "$CWD/verify_static_libs.py" ]; then
-  execute python "$CWD/verify_static_libs.py" "$WORKSPACE" "${CONFIGURE_OPTIONS[@]}"
+  if command_exists "python3"; then
+    execute python3 "$CWD/verify_static_libs.py" "$WORKSPACE" "${CONFIGURE_OPTIONS[@]}"
+  elif command_exists "python"; then
+    execute python "$CWD/verify_static_libs.py" "$WORKSPACE" "${CONFIGURE_OPTIONS[@]}"
+  fi
 fi
 
 
@@ -1675,11 +1749,15 @@ if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == 
   CONFIGURE_OPTIONS+=("--enable-libvpl")
 fi
 
+SHARED_STATIC_FLAGS="--disable-shared --enable-static"
+if [[ "$ANDROID_BUILD" == "true" ]]; then
+  SHARED_STATIC_FLAGS="--enable-shared --disable-static"
+fi
+
 if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
-  --disable-shared \
+  ${SHARED_STATIC_FLAGS} \
   ${THREAD_FLAGS} \
-  --enable-static \
   --enable-version3 \
   --extra-cflags="${CFLAGS}" \
   --extra-ldexeflags="${LDEXEFLAGS}" \

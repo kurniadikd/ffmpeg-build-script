@@ -76,6 +76,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          brew install meson ninja nasm yasm pkg-config autoconf automake libtool cmake
+
       - name: Build FFmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &

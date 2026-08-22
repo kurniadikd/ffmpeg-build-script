@@ -30,7 +30,7 @@ if [ ! -d "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG" ]; then
   fi
 fi
 
-TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG"
+export TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG"
 
 # ─── Cross-compiler tools (NOT exported globally so host tools like pkg-config
 #     still compile natively with the system CC) ────────────────────────────
