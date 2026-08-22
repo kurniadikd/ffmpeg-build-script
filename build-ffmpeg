@@ -973,50 +973,32 @@ EOF
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "svthevc" "1.5.1"; then
-    download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
-    make_dir build
-    cd build || exit
-    if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
-      # Remove all x86 ASM subdirectory declarations from all CMakeLists.txt files
-      find .. -name "CMakeLists.txt" -exec sed -i 's/add_subdirectory(Source\/Lib\/ASM_/# add_subdirectory(Source\/Lib\/ASM_/g' {} \; || true
-      # Remove TARGET_OBJECTS references to x86 ASM targets from Codec CMakeLists.txt
-      sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSE2>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-      sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSSE3>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-      sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSE4_1>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-      sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_AVX2>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-error" -DCOMPILE_ASM=OFF -DENABLE_NASM=OFF -DENABLE_AVX2=OFF -DENABLE_SSE41=OFF -DENABLE_SSSE3=OFF -DENABLE_SSE2=OFF -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .. -G"Unix Makefiles"
-    else
+  if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+    if build "svthevc" "1.5.1"; then
+      download "https://github.com/OpenVisualCloud/SVT-HEVC/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svthevc-$CURRENT_PACKAGE_VERSION.tar.gz"
+      make_dir build
+      cd build || exit
       execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-error" .. -G"Unix Makefiles"
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "svthevc" $CURRENT_PACKAGE_VERSION
     fi
-    execute make -j "$MJOBS"
-    execute make install
-    build_done "svthevc" $CURRENT_PACKAGE_VERSION
+    CONFIGURE_OPTIONS+=("--enable-libsvthevc")
   fi
-  CONFIGURE_OPTIONS+=("--enable-libsvthevc")
 fi
 
-if build "svtvp9" "0.3.1"; then
-  download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
-  make_dir build
-  cd build || exit
-  if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$*" == *"--target-os=android"* ]]; then
-    # Remove all x86 ASM subdirectory declarations from all CMakeLists.txt files
-    find .. -name "CMakeLists.txt" -exec sed -i 's/add_subdirectory(Source\/Lib\/ASM_/# add_subdirectory(Source\/Lib\/ASM_/g' {} \; || true
-    # Remove TARGET_OBJECTS references to x86 ASM targets
-    sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSE2>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-    sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSSE3>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-    sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_SSE4_1>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-    sed -i 's/\$<TARGET_OBJECTS:HEVC_ASM_AVX2>//g' ../Source/Lib/Codec/CMakeLists.txt || true
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCOMPILE_ASM=OFF -DENABLE_NASM=OFF -DENABLE_AVX2=OFF -DENABLE_SSE41=OFF -DENABLE_SSSE3=OFF -DENABLE_SSE2=OFF -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .. -G"Unix Makefiles"
-  else
+if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$*" != *"--target-os=android"* ]]; then
+  if build "svtvp9" "0.3.1"; then
+    download "https://github.com/OpenVisualCloud/SVT-VP9/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtvp9-$CURRENT_PACKAGE_VERSION.tar.gz"
+    make_dir build
+    cd build || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. -G"Unix Makefiles"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "svtvp9" $CURRENT_PACKAGE_VERSION
   fi
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "svtvp9" $CURRENT_PACKAGE_VERSION
+  CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 fi
-CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 
 if build "xeve" "0.5.1"; then
   download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
