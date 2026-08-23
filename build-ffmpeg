@@ -964,10 +964,18 @@ EOF
       "$CROSS_AR" -M < ar.mri
     else
       cd 12bit || exit
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+      if $MACOS_SILICON; then
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF -DMAIN12=ON
+      else
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+      fi
       execute make -j "$MJOBS"
       cd ../10bit || exit
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+      if $MACOS_SILICON; then
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF
+      else
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+      fi
       execute make -j "$MJOBS"
       cd ../8bit || exit
       # Use cp instead of ln -sf on Windows for compatibility
@@ -976,6 +984,8 @@ EOF
       # On Windows, -ldl is not needed (dl functions are in kernel32)
       if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
         execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+      elif $MACOS_SILICON; then
+        execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_ASSEMBLY=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
       else
         execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
       fi
@@ -1040,28 +1050,30 @@ if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64"
   CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 fi
 
-if build "xeve" "0.5.1"; then
-  download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
-  make_dir build
-  cd build || exit
-  # Create version.txt for CMake (tarball lacks .git for git describe)
-  echo "v$CURRENT_PACKAGE_VERSION" > ../version.txt
-  if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error -DXEVE_USE_AVX=0 -DXEVE_USE_SSE=0" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .. -G"Unix Makefiles"
-  else
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "xeve" "0.5.1"; then
+    download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
+    make_dir build
+    cd build || exit
+    # Create version.txt for CMake (tarball lacks .git for git describe)
+    echo "v$CURRENT_PACKAGE_VERSION" > ../version.txt
+    if $MACOS_SILICON; then
+      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error -DXEVE_USE_AVX=0 -DXEVE_USE_SSE=0" .. -G"Unix Makefiles"
+    else
+      execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS="-Wno-unknown-warning-option -Wno-error" .. -G"Unix Makefiles"
+    fi
+    execute make -j "$MJOBS"
+    execute make install
+    # XEVE builds both static and shared libs; remove shared for static ffmpeg build
+    rm -f "${WORKSPACE}/lib/libxeve.so"*
+    rm -f "${WORKSPACE}/lib/libxeveb.so"*
+    # XEVE installs static lib to lib/xeve/ but pkgconfig points to lib/; move static lib to lib/
+    cp "${WORKSPACE}/lib/xeve/libxeve.a" "${WORKSPACE}/lib/" 2>/dev/null || true
+    cp "${WORKSPACE}/lib/xeveb/libxeveb.a" "${WORKSPACE}/lib/" 2>/dev/null || true
+    build_done "xeve" $CURRENT_PACKAGE_VERSION
   fi
-  execute make -j "$MJOBS"
-  execute make install
-  # XEVE builds both static and shared libs; remove shared for static ffmpeg build
-  rm -f "${WORKSPACE}/lib/libxeve.so"*
-  rm -f "${WORKSPACE}/lib/libxeveb.so"*
-  # XEVE installs static lib to lib/xeve/ but pkgconfig points to lib/; move static lib to lib/
-  cp "${WORKSPACE}/lib/xeve/libxeve.a" "${WORKSPACE}/lib/" 2>/dev/null || true
-  cp "${WORKSPACE}/lib/xeveb/libxeveb.a" "${WORKSPACE}/lib/" 2>/dev/null || true
-  build_done "xeve" $CURRENT_PACKAGE_VERSION
+  CONFIGURE_OPTIONS+=("--enable-libxeve")
 fi
-CONFIGURE_OPTIONS+=("--enable-libxeve")
 
 if [[ "$ANDROID_BUILD" != "true" ]]; then
   if build "libvpx" "1.16.0"; then
@@ -1073,7 +1085,11 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
       sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
     fi
 
-    execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
+    if $MACOS_SILICON; then
+      execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --enable-vp9-highbitdepth --target=arm64-darwin20-gcc
+    else
+      execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
+    fi
     execute make -j "$MJOBS"
     execute make install
 
@@ -1083,7 +1099,7 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64" ]]; then
     if build "xvidcore" "1.3.7"; then
       download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
       cd build/generic || exit
@@ -1106,121 +1122,87 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "vid_stab" "1.1.1"; then
-    download "https://github.com/georgmartius/vid.stab/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
+  if [[ "$ANDROID_BUILD" != "true" ]]; then
+    if build "vid_stab" "1.1.1"; then
+      download "https://github.com/georgmartius/vid.stab/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
 
-    if $MACOS_SILICON; then
-      PATCH_URL="https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
-      PATCH_FILE="$PACKAGES/vid.stab-$CURRENT_PACKAGE_VERSION/fix_cmake_quoting.patch"
+      if $MACOS_SILICON; then
+        PATCH_URL="https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
+        PATCH_FILE="$PACKAGES/vid.stab-$CURRENT_PACKAGE_VERSION/fix_cmake_quoting.patch"
 
-      MAX_RETRIES=2
-      RETRY_COUNT=0
-      SUCCESS=false
+        MAX_RETRIES=2
+        RETRY_COUNT=0
+        SUCCESS=false
 
-      while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
-        if [ $RETRY_COUNT -gt 0 ]; then
-          echo "Retrying patch download (attempt $((RETRY_COUNT + 1))/$((MAX_RETRIES + 1))) in 10 seconds..."
-          sleep 10
+        while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
+          if [ $RETRY_COUNT -gt 0 ]; then
+            echo "Retrying patch download (attempt $((RETRY_COUNT + 1))/$((MAX_RETRIES + 1))) in 10 seconds..."
+            sleep 10
+          fi
+
+          curl -L --fail --silent -o "$PATCH_FILE" "$PATCH_URL"
+          if [ $? -eq 0 ] && [ -s "$PATCH_FILE" ]; then
+            SUCCESS=true
+            break
+          fi
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+        done
+
+        if [ "$SUCCESS" = false ]; then
+          echo "Failed to download patch from $PATCH_URL"
+          exit 1
         fi
 
-        curl -L --fail --silent -o "$PATCH_FILE" "$PATCH_URL"
-        if [ $? -eq 0 ] && [ -s "$PATCH_FILE" ]; then
-          SUCCESS=true
-          break
-        fi
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-      done
-
-      if [ "$SUCCESS" = false ]; then
-        echo "Failed to download patch from $PATCH_URL"
-        exit 1
+        patch -p1 <fix_cmake_quoting.patch
       fi
 
-      patch -p1 <fix_cmake_quoting.patch
-    fi
-
-    if [[ "$ANDROID_BUILD" == "true" ]]; then
-      execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" .
-    else
       execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
+      execute make
+      execute make install
+
+      build_done "vid_stab" $CURRENT_PACKAGE_VERSION
     fi
-    execute make
-    execute make install
+    CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
-    build_done "vid_stab" $CURRENT_PACKAGE_VERSION
-  fi
-  CONFIGURE_OPTIONS+=("--enable-libvidstab")
-fi
+    if build "av1" "3.14.1"; then
+      download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
+      make_dir "$PACKAGES"/aom_build
+      cd "$PACKAGES"/aom_build || exit
+      if $MACOS_SILICON; then
+        execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
+      else
+        execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
+      fi
+      execute make -j "$MJOBS"
+      execute make install
 
-if build "av1" "3.14.1"; then
-  download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
-  make_dir "$PACKAGES"/aom_build
-  cd "$PACKAGES"/aom_build || exit
-  if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=OFF -DCONFIG_PIC=1 -DAOM_TARGET_CPU=arm64 -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
-  elif $MACOS_SILICON; then
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
-  else
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/libaom-$CURRENT_PACKAGE_VERSION
-  fi
-  execute make -j "$MJOBS"
-  execute make install
-
-  build_done "av1" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libaom")
-
-if build "zimg" "3.0.6"; then
-  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
-  cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
-  execute "${WORKSPACE}/bin/libtoolize" -i -f -q
-  execute ./autogen.sh --prefix="${WORKSPACE}"
-  if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --enable-static --disable-shared \
-      CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
-  else
-    execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-  fi
-  execute make -j "$MJOBS"
-  execute make install
-  build_done "zimg" $CURRENT_PACKAGE_VERSION
-fi
-CONFIGURE_OPTIONS+=("--enable-libzimg")
-
-if build "libvmaf" "3.2.0"; then
-  download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
-  cd "libvmaf" || exit
-  if [[ "$ANDROID_BUILD" == "true" ]]; then
-    CROSS_INI="${MESON_CROSS_FILE:-}"
-    if [ -z "$CROSS_INI" ] || [ ! -f "$CROSS_INI" ]; then
-      cat > android-arm64.ini << EOF
-[binaries]
-c = '${CROSS_CC:-$CC}'
-cpp = '${CROSS_CXX:-$CXX}'
-ar = '${CROSS_AR:-$AR}'
-ranlib = '${CROSS_RANLIB:-$RANLIB}'
-strip = '${CROSS_STRIP:-$STRIP}'
-
-[properties]
-needs_exe_wrapper = true
-
-[host_machine]
-system = 'android'
-cpu_family = 'aarch64'
-cpu = 'aarch64'
-endian = 'little'
-EOF
-      CROSS_INI="android-arm64.ini"
+      build_done "av1" $CURRENT_PACKAGE_VERSION
     fi
-    execute meson setup build --cross-file "$CROSS_INI" --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true -Dasm=disabled
-  else
-    execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
+    CONFIGURE_OPTIONS+=("--enable-libaom")
+
+    if build "zimg" "3.0.6"; then
+      download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
+      cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
+      execute "${WORKSPACE}/bin/libtoolize" -i -f -q
+      execute ./autogen.sh --prefix="${WORKSPACE}"
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+      execute make -j "$MJOBS"
+      execute make install
+      build_done "zimg" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libzimg")
+
+    if build "libvmaf" "3.2.0"; then
+      download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
+      cd "libvmaf" || exit
+      execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "libvmaf" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libvmaf")
   fi
-  execute ninja -C build
-  execute ninja -C build install
-  build_done "libvmaf" $CURRENT_PACKAGE_VERSION
 fi
-CONFIGURE_OPTIONS+=("--enable-libvmaf")
 
 if [[ "$ANDROID_BUILD" == "true" ]] || [[ "$OSTYPE" == "darwin"* ]]; then
   EXTRALIBS="${EXTRALIBS} -lc++"
@@ -1481,23 +1463,21 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
   EXTRALIBS="${EXTRALIBS} -llcms2"
 fi
 
-if build "libwebp" "1.6.0"; then
-  # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
-  CPPFLAGS=
-  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
-  make_dir build
-  cd build || exit
-  if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../
-  else
+if [[ "$ANDROID_BUILD" != "true" ]]; then
+  if build "libwebp" "1.6.0"; then
+    # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
+    CPPFLAGS=
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
+    make_dir build
+    cd build || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=ON ../
-  fi
-  execute make -j "$MJOBS"
-  execute make install
+    execute make -j "$MJOBS"
+    execute make install
 
-  build_done "libwebp" $CURRENT_PACKAGE_VERSION
+    build_done "libwebp" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
-CONFIGURE_OPTIONS+=("--enable-libwebp")
 
 ##
 ## other library
