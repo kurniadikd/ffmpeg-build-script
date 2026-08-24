@@ -731,7 +731,7 @@ if $NONFREE_AND_GPL; then
 
   if [[ "$ANDROID_BUILD" != "true" ]]; then
     if build "openssl" "4.0.1"; then
-      download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
+      download "https://github.com/openssl/openssl/releases/download/openssl-$CURRENT_PACKAGE_VERSION/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
       execute make -j "$MJOBS"
       execute make install_sw
@@ -1529,7 +1529,11 @@ if $NONFREE_AND_GPL; then
       export OPENSSL_ROOT_DIR="${WORKSPACE}"
       export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
       export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-      execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=OFF
+      else
+        execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+      fi
       execute make install
 
       if [ -n "$LDEXEFLAGS" ]; then
@@ -1560,9 +1564,9 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
   if build "libzmq" "4.3.5"; then
     download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
     if [[ "$OSTYPE" == "darwin"* ]]; then
-      export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
+      export XML_CATALOG_FILES=/opt/homebrew/etc/xml/catalog 
     fi
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --without-docs
     sed "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g" src/proxy.cpp >src/proxy.cpp.patched
     rm src/proxy.cpp
     mv src/proxy.cpp.patched src/proxy.cpp

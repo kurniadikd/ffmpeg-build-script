@@ -83,8 +83,17 @@ jobs:
       - name: Build FFmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
-          kill %1
+          if ! SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free; then
+            echo "=== MACOS BUILD FAILED ==="
+            for logfile in packages/FFmpeg*/configure.log packages/FFmpeg*/ffbuild/config.log configure.log ffbuild/config.log; do
+              if [ -f "$logfile" ]; then
+                echo "=== $logfile (last 100 lines) ==="
+                tail -n 100 "$logfile"
+              fi
+            done
+            exit 1
+          fi
+          kill %1 2>/dev/null || true
 
       - name: Test FFmpeg
         run: |

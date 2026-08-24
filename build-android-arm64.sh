@@ -93,7 +93,7 @@ echo "=========================================================="
 #     tetap menggunakan native compiler Linux x86_64.
 #   - Flag --cc / --cxx / dll diteruskan eksplisit ke build-ffmpeg → FFmpeg configure.
 #   - CFLAGS/CXXFLAGS di-set via FFMPEG_EXTRA_FLAGS agar hanya berlaku untuk FFmpeg.
-SKIPINSTALL=yes SKIPRAV1E=yes \
+if ! SKIPINSTALL=yes SKIPRAV1E=yes \
   CFLAGS="-fPIC -DANDROID" \
   CXXFLAGS="-fPIC -DANDROID" \
   ./build-ffmpeg \
@@ -115,24 +115,32 @@ SKIPINSTALL=yes SKIPRAV1E=yes \
   --disable-ffplay \
   --enable-libfdk-aac \
   --enable-libsvtav1 \
-  --skip-install
+  --skip-install; then
+    echo "=== ANDROID BUILD-FFMPEG FAILED ==="
+    for logfile in packages/FFmpeg*/configure.log packages/FFmpeg*/ffbuild/config.log configure.log ffbuild/config.log; do
+      if [ -f "$logfile" ]; then
+        echo "=== $logfile (last 100 lines) ==="
+        tail -n 100 "$logfile"
+      fi
+    done
+    exit 1
+fi
 
-echo "=== Copying cross-compiled ARM64 ffmpeg binary ==="
+echo "=== Verifying ARM64 ffmpeg binary ==="
 mkdir -p workspace/bin
-FFMPEG_SRC_BIN=""
-for path in packages/FFmpeg-*/ffmpeg packages/FFmpeg-release-*/ffmpeg; do
-  if [ -f "$path" ]; then
-    FFMPEG_SRC_BIN="$path"
-    break
-  fi
-done
+if [ ! -f "workspace/bin/ffmpeg" ]; then
+  for path in packages/FFmpeg-*/ffmpeg packages/FFmpeg-release-*/ffmpeg; do
+    if [ -f "$path" ]; then
+      cp "$path" workspace/bin/ffmpeg
+      chmod +x workspace/bin/ffmpeg
+      echo "Copied $path to workspace/bin/ffmpeg"
+      break
+    fi
+  done
+fi
 
-if [ -n "$FFMPEG_SRC_BIN" ]; then
-  cp "$FFMPEG_SRC_BIN" workspace/bin/ffmpeg
-  chmod +x workspace/bin/ffmpeg
-  echo "Copied $FFMPEG_SRC_BIN to workspace/bin/ffmpeg"
-else
-  echo "ERROR: Could not locate compiled ffmpeg binary in packages/!" >&2
+if [ ! -f "workspace/bin/ffmpeg" ]; then
+  echo "ERROR: Could not locate compiled ffmpeg binary in workspace/bin or packages/!" >&2
   exit 1
 fi
 
