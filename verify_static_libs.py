@@ -60,8 +60,13 @@ def verify(workspace_dir, configure_options):
                 new_lines = []
                 for line in lines:
                     if line.startswith("Libs:") or line.startswith("Libs.private:"):
-                        # Remove or replace dynamic runtime/stdc++ dependencies from static pc files
-                        for bad_flag in ["-lgcc_s", "-lgcc_eh", "-lstdc++", "-lgcc"]:
+                        is_darwin_or_android = 'darwin' in sys.platform.lower() or os.environ.get('ANDROID_BUILD') == 'true'
+                        if is_darwin_or_android:
+                            if "-lstdc++" in line:
+                                print(f"  [PC PATCH] Mapping '-lstdc++' -> '-lc++' in {filename}")
+                                line = line.replace("-lstdc++", "-lc++")
+                                modified = True
+                        for bad_flag in ["-lgcc_s", "-lgcc_eh", "-lgcc"]:
                             if bad_flag in line:
                                 print(f"  [PC PATCH] Removing '{bad_flag}' from {filename}: {line}")
                                 # Replace with space to avoid joining other flags

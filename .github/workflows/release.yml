@@ -118,6 +118,17 @@ jobs:
             ffmpeg-macos-universal.tar.gz
             ffmpeg-macos-universal.tar.gz.sha256
 
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-macos
+          path: |
+            *.log
+            packages/FFmpeg*/*.log
+            packages/FFmpeg*/ffbuild/*.log
+          if-no-files-found: ignore
+
   build-windows:
     name: Build Windows (MSYS2)
     if: |
@@ -268,6 +279,17 @@ jobs:
           path: |
             ffmpeg-android-arm64.tar.gz
             ffmpeg-android-arm64.tar.gz.sha256
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-android
+          path: |
+            *.log
+            packages/FFmpeg*/*.log
+            packages/FFmpeg*/ffbuild/*.log
+          if-no-files-found: ignore
 
   create-release:
     name: Create GitHub Release

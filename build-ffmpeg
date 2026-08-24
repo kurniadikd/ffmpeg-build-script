@@ -870,12 +870,15 @@ if build "svtav1" "4.1.0"; then
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
   if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
   else
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
   fi
   execute make -j "$MJOBS"
   execute make install
+  if [ -d "${WORKSPACE}/lib64" ]; then
+    cp -rn "${WORKSPACE}/lib64/"* "${WORKSPACE}/lib/" 2>/dev/null || true
+  fi
   execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
   build_done "svtav1" $CURRENT_PACKAGE_VERSION
 fi
@@ -1510,11 +1513,11 @@ fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
-if [[ "$ANDROID_BUILD" != "true" ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
   if build "VapourSynth" "73"; then
     # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
     # no need to build it at compile team, only headers need to be installed
-    download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
+    download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz" "VapourSynth-R$CURRENT_PACKAGE_VERSION.tar.gz" "vapoursynth-R$CURRENT_PACKAGE_VERSION"
     execute mkdir -p "${WORKSPACE}/include/vapoursynth"
     execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
     build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
@@ -1545,15 +1548,17 @@ if $NONFREE_AND_GPL; then
     fi
     CONFIGURE_OPTIONS+=("--enable-libsrt")
 
-    if build "zvbi" "0.2.44"; then
-      download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute ./autogen.sh --prefix="${WORKSPACE}"
-      execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
-      execute make -j "$MJOBS"
-      execute make install
-      build_done "zvbi" $CURRENT_PACKAGE_VERSION
+    if [[ "$OSTYPE" != "darwin"* ]]; then
+      if build "zvbi" "0.2.44"; then
+        download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute ./autogen.sh --prefix="${WORKSPACE}"
+        execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
+        execute make -j "$MJOBS"
+        execute make install
+        build_done "zvbi" $CURRENT_PACKAGE_VERSION
+      fi
+      CONFIGURE_OPTIONS+=("--enable-libzvbi")
     fi
-    CONFIGURE_OPTIONS+=("--enable-libzvbi")
   fi
 fi
 
@@ -1591,7 +1596,7 @@ fi
 ## HWaccel library
 ##
 
-if [[ "$ANDROID_BUILD" != "true" ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
   if build "vulkan-headers" "1.4.341.0"; then
     download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
