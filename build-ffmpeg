@@ -857,6 +857,7 @@ if command_exists "python3"; then
       fi
       execute ninja -C build
       execute ninja -C build install
+      CFLAGS=$CFLAGSBACKUP
 
       build_done "dav1d" $CURRENT_PACKAGE_VERSION
     fi
@@ -994,7 +995,7 @@ EOF
       mv libx265.a libx265_main.a
 
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        execute /usr/bin/libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null || execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+        execute /usr/bin/libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
       elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
         # On Windows, use libtool to combine static libraries
         execute libtool.exe -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
@@ -1742,6 +1743,17 @@ fi
 SHARED_STATIC_FLAGS="--disable-shared --enable-static"
 if [[ "$ANDROID_BUILD" == "true" ]]; then
   SHARED_STATIC_FLAGS="--enable-shared --disable-static"
+fi
+
+if [[ "$OSTYPE" == "darwin"* ]] || [[ "$ANDROID_BUILD" == "true" ]]; then
+  if [ -d "${WORKSPACE}/lib/pkgconfig" ]; then
+    echo "Sanitizing pkg-config files for libc++ on Darwin/Android..."
+    for pc in "${WORKSPACE}"/lib/pkgconfig/*.pc; do
+      if [ -f "$pc" ]; then
+        sed -i.bak 's/-lstdc++/-lc++/g' "$pc" 2>/dev/null || sed -i 's/-lstdc++/-lc++/g' "$pc" 2>/dev/null || true
+      fi
+    done
+  fi
 fi
 
 if ! ./configure "${CONFIGURE_OPTIONS[@]}" \
