@@ -870,9 +870,9 @@ if build "svtav1" "4.1.0"; then
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
   if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
   else
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
   fi
   execute make -j "$MJOBS"
   execute make install
@@ -946,15 +946,15 @@ if $NONFREE_AND_GPL; then
 
     if [[ "$ANDROID_BUILD" == "true" ]]; then
       cd 12bit || exit
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF -DMAIN12=ON
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF -DMAIN12=ON
       execute make -j "$MJOBS"
       cd ../10bit || exit
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_ASSEMBLY=OFF
       execute make -j "$MJOBS"
       cd ../8bit || exit
       cp ../10bit/libx265.a libx265_main10.a
       cp ../12bit/libx265.a libx265_main12.a
-      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_ASSEMBLY=OFF -DENABLE_CLI=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+      execute cmake ../../../source -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-26" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_ASSEMBLY=OFF -DENABLE_CLI=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
       execute make -j "$MJOBS"
       mv libx265.a libx265_main.a
       cat > ar.mri <<'EOF'
@@ -1320,8 +1320,8 @@ fi
 if build "opus" "1.6.1"; then
   download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
   if [[ "$ANDROID_BUILD" == "true" ]]; then
-    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static \
-      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+    execute ./configure --prefix="${WORKSPACE}" --host=aarch64-linux-android --disable-shared --enable-static --with-pic \
+      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" CFLAGS="-fPIC -DANDROID ${CFLAGS:-}"
   else
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   fi
@@ -1517,7 +1517,7 @@ if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
   if build "VapourSynth" "73"; then
     # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
     # no need to build it at compile team, only headers need to be installed
-    download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz" "VapourSynth-R$CURRENT_PACKAGE_VERSION.tar.gz" "vapoursynth-R$CURRENT_PACKAGE_VERSION"
+    download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
     execute mkdir -p "${WORKSPACE}/include/vapoursynth"
     execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
     build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
