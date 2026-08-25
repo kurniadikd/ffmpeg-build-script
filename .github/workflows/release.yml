@@ -78,13 +78,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install meson ninja nasm yasm pkg-config autoconf automake libtool cmake
+          brew install meson ninja nasm yasm pkg-config autoconf automake libtool gettext cmake
+          echo "$(brew --prefix libtool)/bin" >> $GITHUB_PATH
+          echo "$(brew --prefix gettext)/bin" >> $GITHUB_PATH
 
       - name: Build FFmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          if ! SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free; then
+          if ! SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free 2>&1 | tee /tmp/build-macos.log; then
             echo "=== MACOS BUILD FAILED ==="
+            echo "=== Last 200 lines of build output ==="
+            tail -n 200 /tmp/build-macos.log || true
             for logfile in packages/FFmpeg*/configure.log packages/FFmpeg*/ffbuild/config.log configure.log ffbuild/config.log; do
               if [ -f "$logfile" ]; then
                 echo "=== $logfile (last 100 lines) ==="

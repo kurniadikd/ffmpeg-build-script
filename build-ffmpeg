@@ -1187,7 +1187,11 @@ if $NONFREE_AND_GPL; then
     if build "zimg" "3.0.6"; then
       download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
       cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
-      execute "${WORKSPACE}/bin/libtoolize" -i -f -q
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        execute glibtoolize -i -f -q
+      else
+        execute "${WORKSPACE}/bin/libtoolize" -i -f -q
+      fi
       execute ./autogen.sh --prefix="${WORKSPACE}"
       execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
       execute make -j "$MJOBS"
