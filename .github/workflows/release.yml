@@ -101,7 +101,13 @@ jobs:
 
       - name: Test FFmpeg
         run: |
-          ./workspace/bin/ffmpeg -buildconf
+          echo "=== FFmpeg binary info ==="
+          file workspace/bin/ffmpeg || true
+          otool -L workspace/bin/ffmpeg 2>/dev/null | head -30 || true
+          echo "=== Running ffmpeg -version ==="
+          ./workspace/bin/ffmpeg -version
+          echo "=== Running ffmpeg -buildconf (info only) ==="
+          ./workspace/bin/ffmpeg -buildconf 2>/dev/null || true
 
       - name: Prepare release assets
         run: |
@@ -239,7 +245,17 @@ jobs:
           rm -rf workspace/ packages/
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           chmod +x ./build-android-arm64.sh ./build-ffmpeg
-          ./build-android-arm64.sh
+          if ! ./build-android-arm64.sh 2>&1 | tee /tmp/build-android.log; then
+            echo "=== ANDROID BUILD FAILED — last 300 lines ==="
+            tail -n 300 /tmp/build-android.log || true
+            for logfile in packages/FFmpeg*/configure.log packages/FFmpeg*/ffbuild/config.log; do
+              if [ -f "$logfile" ]; then
+                echo "=== $logfile (last 100 lines) ==="
+                tail -n 100 "$logfile"
+              fi
+            done
+            exit 1
+          fi
           kill %1 2>/dev/null || true
 
       - name: Validate build output
