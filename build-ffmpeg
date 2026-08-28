@@ -1816,10 +1816,12 @@ if [[ "$ANDROID_BUILD" == "true" ]]; then
   mkdir -p "$WORKSPACE/bin"
   if [ -f "ffmpeg" ]; then
     cp ffmpeg "$WORKSPACE/bin/ffmpeg"
+    chmod +x "$WORKSPACE/bin/ffmpeg"
     echo "Cross-compiled ARM64 binary saved to: $WORKSPACE/bin/ffmpeg"
   fi
   if [ -f "ffprobe" ]; then
     cp ffprobe "$WORKSPACE/bin/ffprobe"
+    chmod +x "$WORKSPACE/bin/ffprobe"
   fi
   exit 0
 fi

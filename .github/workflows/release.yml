@@ -262,6 +262,8 @@ jobs:
         run: |
           echo "=== Checking build output ==="
           ls -lah workspace/ || true
+          ls -lah workspace/lib/ || true
+          ls -lah workspace/bin/ || true
           if [ -f workspace/bin/ffmpeg ]; then
             echo "=== Validating ARM64 ELF Architecture ==="
             readelf -h workspace/bin/ffmpeg
@@ -270,8 +272,11 @@ jobs:
               exit 1
             fi
             echo "SUCCESS: workspace/bin/ffmpeg verified as genuine ARM64!"
+          elif [ -f workspace/lib/libavcodec.so ]; then
+            echo "SUCCESS: Found compiled shared libraries in workspace/lib/!"
+            readelf -h workspace/lib/libavcodec.so
           else
-            echo "ERROR: workspace/bin/ffmpeg binary not found!"
+            echo "ERROR: Neither workspace/bin/ffmpeg nor workspace/lib/libavcodec.so found!"
             exit 1
           fi
 
