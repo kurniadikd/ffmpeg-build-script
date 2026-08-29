@@ -126,7 +126,7 @@ if ! SKIPINSTALL=yes SKIPRAV1E=yes \
     exit 1
 fi
 
-echo "=== Verifying ARM64 ffmpeg binary ==="
+echo "=== Verifying ARM64 ffmpeg build output ==="
 mkdir -p workspace/bin
 if [ ! -f "workspace/bin/ffmpeg" ]; then
   for path in packages/FFmpeg-*/ffmpeg packages/FFmpeg-release-*/ffmpeg; do
@@ -139,17 +139,28 @@ if [ ! -f "workspace/bin/ffmpeg" ]; then
   done
 fi
 
-if [ ! -f "workspace/bin/ffmpeg" ]; then
-  echo "ERROR: Could not locate compiled ffmpeg binary in workspace/bin or packages/!" >&2
+if [ -f "workspace/bin/ffmpeg" ]; then
+  echo "=== Validating ARM64 ELF Architecture for ffmpeg CLI ==="
+  if command -v readelf >/dev/null 2>&1; then
+    readelf -h workspace/bin/ffmpeg
+    if ! readelf -h workspace/bin/ffmpeg | grep -qE "AArch64|183"; then
+      echo "ERROR: workspace/bin/ffmpeg is NOT ARM64 (AArch64)!" >&2
+      exit 1
+    fi
+    echo "SUCCESS: Verified workspace/bin/ffmpeg is genuine ARM64 (AArch64)!"
+  fi
+elif [ -f "workspace/lib/libavcodec.so" ]; then
+  echo "=== Validating ARM64 ELF Architecture for shared libraries ==="
+  if command -v readelf >/dev/null 2>&1; then
+    readelf -h workspace/lib/libavcodec.so
+    if ! readelf -h workspace/lib/libavcodec.so | grep -qE "AArch64|183"; then
+      echo "ERROR: workspace/lib/libavcodec.so is NOT ARM64 (AArch64)!" >&2
+      exit 1
+    fi
+    echo "SUCCESS: Verified workspace/lib/libavcodec.so is genuine ARM64 (AArch64)!"
+  fi
+else
+  echo "ERROR: Could not locate compiled ffmpeg or libavcodec.so in workspace!" >&2
   exit 1
 fi
 
-echo "=== Validating ARM64 ELF Architecture ==="
-if command -v readelf >/dev/null 2>&1; then
-  readelf -h workspace/bin/ffmpeg
-  if ! readelf -h workspace/bin/ffmpeg | grep -qE "AArch64|183"; then
-    echo "ERROR: workspace/bin/ffmpeg is NOT ARM64 (AArch64)!" >&2
-    exit 1
-  fi
-  echo "SUCCESS: Verified workspace/bin/ffmpeg is genuine ARM64 (AArch64)!"
-fi

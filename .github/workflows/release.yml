@@ -102,9 +102,11 @@ jobs:
       - name: Test FFmpeg
         run: |
           echo "=== FFmpeg binary info ==="
+          chmod +x workspace/bin/ffmpeg || true
           file workspace/bin/ffmpeg || true
           otool -L workspace/bin/ffmpeg 2>/dev/null | head -30 || true
           echo "=== Running ffmpeg -version ==="
+          export DYLD_LIBRARY_PATH="${PWD}/workspace/lib:${DYLD_LIBRARY_PATH:-}"
           ./workspace/bin/ffmpeg -version
           echo "=== Running ffmpeg -buildconf (info only) ==="
           ./workspace/bin/ffmpeg -buildconf 2>/dev/null || true
