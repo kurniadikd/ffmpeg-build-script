@@ -114,11 +114,13 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release
-          cp workspace/bin/ffmpeg release/
-          cp workspace/bin/ffprobe release/
-          cp workspace/bin/ffplay release/ || true
+          if [ -f workspace/bin/ffmpeg ]; then cp workspace/bin/ffmpeg release/; elif ls packages/FFmpeg*/ffmpeg 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffmpeg release/; fi
+          if [ -f workspace/bin/ffprobe ]; then cp workspace/bin/ffprobe release/; elif ls packages/FFmpeg*/ffprobe 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffprobe release/; fi
+          if [ -f workspace/bin/ffplay ]; then cp workspace/bin/ffplay release/; elif ls packages/FFmpeg*/ffplay 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffplay release/; fi
+          echo "=== Files in release folder ==="
+          ls -lah release/
           cd release
-          tar -czvf ../ffmpeg-macos-universal.tar.gz *
+          tar -czvf ../ffmpeg-macos-universal.tar.gz .
           cd ..
           shasum -a 256 ffmpeg-macos-universal.tar.gz > ffmpeg-macos-universal.tar.gz.sha256
 
