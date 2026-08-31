@@ -634,8 +634,8 @@ fi
 if ! command_exists "m4" || ! m4 --version >/dev/null 2>&1 || ! version_satisfies "$(m4 --version 2>&1 | head -n 1 | awk '{print $NF}')" "1.4.8"; then
   if build "m4" "1.4.21"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-      echo "Skipping m4 on Windows (MSYS2 provides it natively)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "Skipping m4 on Windows/macOS (system/Homebrew provides it natively)"
       build_done "m4" $CURRENT_PACKAGE_VERSION
     else
       download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -650,8 +650,8 @@ fi
 if ! command_exists "autoconf" || ! autoconf --version >/dev/null 2>&1; then
   if build "autoconf" "2.73"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-      echo "Skipping autoconf on Windows (MSYS2 provides it natively)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "Skipping autoconf on Windows/macOS (system/Homebrew provides it natively)"
       build_done "autoconf" $CURRENT_PACKAGE_VERSION
     else
       download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -666,8 +666,8 @@ fi
 if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
   if build "automake" "1.18.1"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-      echo "Skipping automake on Windows (MSYS2 provides it natively)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "Skipping automake on Windows/macOS (system/Homebrew provides it natively)"
       build_done "automake" $CURRENT_PACKAGE_VERSION
     else
       download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -682,8 +682,8 @@ fi
 if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } && { ! command_exists "glibtoolize" || ! glibtoolize --version >/dev/null 2>&1; }; then
   if build "libtool" "2.5.4"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
-      echo "Skipping libtool on Windows (MSYS2 provides it natively)"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "Skipping libtool on Windows/macOS (system/Homebrew provides it natively)"
       build_done "libtool" $CURRENT_PACKAGE_VERSION
     else
       download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -715,8 +715,10 @@ if $NONFREE_AND_GPL; then
     AUTOPOINT_OK=false
   fi
 
-  if ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || [ "$AUTOPOINT_OK" = false ]; then
-    if build "gettext" "1.0"; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Skipping gettext build on macOS (Homebrew provides it natively)"
+  elif ! command_exists "gettext" || ! gettext --version >/dev/null 2>&1 || [ "$AUTOPOINT_OK" = false ]; then
+    if build "gettext" "0.22.5"; then
       download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
       execute make -j "$MJOBS"

@@ -84,19 +84,9 @@ jobs:
 
       - name: Build FFmpeg
         run: |
+          set -e -o pipefail
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          if ! SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free 2>&1 | tee /tmp/build-macos.log; then
-            echo "=== MACOS BUILD FAILED ==="
-            echo "=== Last 200 lines of build output ==="
-            tail -n 200 /tmp/build-macos.log || true
-            for logfile in packages/FFmpeg*/configure.log packages/FFmpeg*/ffbuild/config.log configure.log ffbuild/config.log; do
-              if [ -f "$logfile" ]; then
-                echo "=== $logfile (last 100 lines) ==="
-                tail -n 100 "$logfile"
-              fi
-            done
-            exit 1
-          fi
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
           kill %1 2>/dev/null || true
 
       - name: Test FFmpeg
@@ -114,13 +104,29 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release
-          if [ -f workspace/bin/ffmpeg ]; then cp workspace/bin/ffmpeg release/; elif ls packages/FFmpeg*/ffmpeg 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffmpeg release/; fi
-          if [ -f workspace/bin/ffprobe ]; then cp workspace/bin/ffprobe release/; elif ls packages/FFmpeg*/ffprobe 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffprobe release/; fi
-          if [ -f workspace/bin/ffplay ]; then cp workspace/bin/ffplay release/; elif ls packages/FFmpeg*/ffplay 1>/dev/null 2>&1; then cp packages/FFmpeg*/ffplay release/; fi
+          if [ -f workspace/bin/ffmpeg ]; then
+            cp workspace/bin/ffmpeg release/
+          elif ls packages/FFmpeg*/ffmpeg 1>/dev/null 2>&1; then
+            cp packages/FFmpeg*/ffmpeg release/
+          fi
+          if [ -f workspace/bin/ffprobe ]; then
+            cp workspace/bin/ffprobe release/
+          elif ls packages/FFmpeg*/ffprobe 1>/dev/null 2>&1; then
+            cp packages/FFmpeg*/ffprobe release/
+          fi
+          if [ -f workspace/bin/ffplay ]; then
+            cp workspace/bin/ffplay release/
+          elif ls packages/FFmpeg*/ffplay 1>/dev/null 2>&1; then
+            cp packages/FFmpeg*/ffplay release/
+          fi
+          if [ ! -f release/ffmpeg ]; then
+            echo "ERROR: release/ffmpeg binary not found in workspace or packages!"
+            exit 1
+          fi
           echo "=== Files in release folder ==="
           ls -lah release/
           cd release
-          tar -czvf ../ffmpeg-macos-universal.tar.gz .
+          tar -czvf ../ffmpeg-macos-universal.tar.gz *
           cd ..
           shasum -a 256 ffmpeg-macos-universal.tar.gz > ffmpeg-macos-universal.tar.gz.sha256
 
