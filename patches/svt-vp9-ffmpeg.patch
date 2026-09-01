@@ -81,7 +81,7 @@ new file mode 100644
 index 0000000000..90ed5cbff2
 --- /dev/null
 +++ b/libavcodec/libsvt_vp9.c
-@@ -0,0 +1,701 @@
+@@ -0,0 +1,700 @@
 +/*
 +* Scalable Video Technology for VP9 encoder library plugin
 +*
@@ -777,8 +777,7 @@ index 0000000000..90ed5cbff2
 +    .p.capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
 +    .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
 +                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP,
-+    .p.pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
-+                                                    AV_PIX_FMT_NONE },
++    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
 +    .p.priv_class     = &class,
 +    .defaults         = eb_enc_defaults,
 +    .p.wrapper_name   = "libsvt_vp9",

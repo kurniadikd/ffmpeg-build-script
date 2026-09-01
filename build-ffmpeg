@@ -1749,6 +1749,10 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtVp9Enc.pc" ]]; then
       download "https://raw.githubusercontent.com/OpenVisualCloud/SVT-VP9/master/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch" "svt-vp9-ffmpeg.patch"
       patch -p1 -N < "$PACKAGES/svt-vp9-ffmpeg.patch" || true
     fi
+    if [ -f "libavcodec/libsvt_vp9.c" ]; then
+      sed -i.bak 's/\.p\.pix_fmts.*=.*AV_PIX_FMT_YUV420P.*/CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),/' libavcodec/libsvt_vp9.c 2>/dev/null || true
+      sed -i.bak '/AV_PIX_FMT_NONE/d' libavcodec/libsvt_vp9.c 2>/dev/null || true
+    fi
   fi
   if [[ -f "libavcodec/libsvt_vp9.c" ]] && grep -q "enable-libsvtvp9" configure 2>/dev/null; then
     CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
