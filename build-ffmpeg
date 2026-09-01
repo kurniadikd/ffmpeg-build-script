@@ -1043,7 +1043,6 @@ if $NONFREE_AND_GPL; then
       execute make install
       build_done "svthevc" $CURRENT_PACKAGE_VERSION
     fi
-    CONFIGURE_OPTIONS+=("--enable-libsvthevc")
   fi
 fi
 
@@ -1057,7 +1056,6 @@ if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64"
     execute make install
     build_done "svtvp9" $CURRENT_PACKAGE_VERSION
   fi
-  CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
 fi
 
 if [[ "$ANDROID_BUILD" != "true" ]]; then
@@ -1559,7 +1557,7 @@ if $NONFREE_AND_GPL; then
     CONFIGURE_OPTIONS+=("--enable-libsrt")
 
     if [[ "$OSTYPE" != "darwin"* ]]; then
-      if build "zvbi" "0.2.45"; then
+      if build "zvbi" "0.2.44"; then
         download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -1618,7 +1616,7 @@ if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
 
   # vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
   if command_exists "python3"; then
-    if build "glslang" "16.5.0"; then
+    if build "glslang" "16.3.0"; then
       download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./update_glslang_sources.py
       execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
@@ -1626,7 +1624,11 @@ if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
       execute make install
       build_done "glslang" $CURRENT_PACKAGE_VERSION
     fi
-    CONFIGURE_OPTIONS+=("--enable-libglslang")
+    # FFmpeg < 9.0 used --enable-libglslang; FFmpeg >= 9.0 removed it in favor of standalone glslang/glslangValidator in PATH
+    FFMPEG_MAJOR=$(echo "$FFMPEG_VERSION" | cut -d. -f1)
+    if [ "$FFMPEG_MAJOR" -lt 9 ]; then
+      CONFIGURE_OPTIONS+=("--enable-libglslang")
+    fi
   fi
 fi
 
@@ -1717,9 +1719,19 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtHevcEnc.pc" ]]; then
       echo "Error: patch command not found, cannot apply SVT-HEVC patch." >&2
       exit 1
     fi
-    echo "Applying SVT-HEVC patch to FFmpeg..."
-    download "https://aur.archlinux.org/cgit/aur.git/plain/010-ffmpeg-add-svt-hevc.patch?h=ffmpeg-full" "010-ffmpeg-add-svt-hevc.patch"
-    execute patch -p1 -N < "$PACKAGES/010-ffmpeg-add-svt-hevc.patch" || true
+    if [ -f "$CWD/patches/010-ffmpeg-add-svt-hevc.patch" ]; then
+      echo "Applying vendored SVT-HEVC patch to FFmpeg..."
+      patch -p1 -N < "$CWD/patches/010-ffmpeg-add-svt-hevc.patch" || true
+    else
+      echo "Applying SVT-HEVC patch to FFmpeg..."
+      download "https://aur.archlinux.org/cgit/aur.git/plain/010-ffmpeg-add-svt-hevc.patch?h=ffmpeg-full" "010-ffmpeg-add-svt-hevc.patch"
+      patch -p1 -N < "$PACKAGES/010-ffmpeg-add-svt-hevc.patch" || true
+    fi
+  fi
+  if [[ -f "libavcodec/libsvt_hevc.c" ]] && grep -q "enable-libsvthevc" configure 2>/dev/null; then
+    CONFIGURE_OPTIONS+=("--enable-libsvthevc")
+  else
+    echo "Notice: SVT-HEVC support not patched into configure; skipping --enable-libsvthevc"
   fi
 fi
 
@@ -1729,9 +1741,19 @@ if [[ -f "${WORKSPACE}/lib/pkgconfig/SvtVp9Enc.pc" ]]; then
       echo "Error: patch command not found, cannot apply SVT-VP9 patch." >&2
       exit 1
     fi
-    echo "Applying SVT-VP9 patch to FFmpeg..."
-    download "https://raw.githubusercontent.com/OpenVisualCloud/SVT-VP9/master/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch" "svt-vp9-ffmpeg.patch"
-    execute patch -p1 -N < "$PACKAGES/svt-vp9-ffmpeg.patch" || true
+    if [ -f "$CWD/patches/svt-vp9-ffmpeg.patch" ]; then
+      echo "Applying vendored SVT-VP9 patch to FFmpeg..."
+      patch -p1 -N < "$CWD/patches/svt-vp9-ffmpeg.patch" || true
+    else
+      echo "Applying SVT-VP9 patch to FFmpeg..."
+      download "https://raw.githubusercontent.com/OpenVisualCloud/SVT-VP9/master/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch" "svt-vp9-ffmpeg.patch"
+      patch -p1 -N < "$PACKAGES/svt-vp9-ffmpeg.patch" || true
+    fi
+  fi
+  if [[ -f "libavcodec/libsvt_vp9.c" ]] && grep -q "enable-libsvtvp9" configure 2>/dev/null; then
+    CONFIGURE_OPTIONS+=("--enable-libsvtvp9")
+  else
+    echo "Notice: SVT-VP9 support not patched into configure; skipping --enable-libsvtvp9"
   fi
 fi
 

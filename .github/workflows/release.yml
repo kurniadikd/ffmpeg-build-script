@@ -38,8 +38,21 @@ jobs:
       - name: Build FFmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
-          kill %1
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free 2>&1 | tee /tmp/build-linux.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          kill %1 2>/dev/null || true
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "=== LINUX BUILD FAILED (exit code $EXIT_CODE) ==="
+            echo "=== Last 300 lines of build output ==="
+            tail -n 300 /tmp/build-linux.log || true
+            for cfg in packages/FFmpeg*/ffbuild/config.log packages/ffmpeg*/ffbuild/config.log; do
+              if [ -f "$cfg" ]; then
+                echo "=== Last 200 lines of $cfg ==="
+                tail -n 200 "$cfg" || true
+              fi
+            done
+            exit 1
+          fi
 
       - name: Test FFmpeg
         run: |
@@ -63,6 +76,18 @@ jobs:
           path: |
             ffmpeg-linux-amd64.tar.gz
             ffmpeg-linux-amd64.tar.gz.sha256
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-linux
+          path: |
+            /tmp/build-linux.log
+            *.log
+            packages/FFmpeg*/*.log
+            packages/FFmpeg*/ffbuild/*.log
+          if-no-files-found: ignore
 
   build-macos:
     name: Build macOS
@@ -204,8 +229,21 @@ jobs:
           MSYS: winsymlinks:copy
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
-          kill %1
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free 2>&1 | tee build-windows.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          kill %1 2>/dev/null || true
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "=== WINDOWS BUILD FAILED (exit code $EXIT_CODE) ==="
+            echo "=== Last 300 lines of build output ==="
+            tail -n 300 build-windows.log || true
+            for cfg in packages/FFmpeg*/ffbuild/config.log packages/ffmpeg*/ffbuild/config.log; do
+              if [ -f "$cfg" ]; then
+                echo "=== Last 200 lines of $cfg ==="
+                tail -n 200 "$cfg" || true
+              fi
+            done
+            exit 1
+          fi
 
       - name: Test FFmpeg
         run: |
@@ -230,6 +268,18 @@ jobs:
           path: |
             ffmpeg-windows-amd64.zip
             ffmpeg-windows-amd64.zip.sha256
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-windows
+          path: |
+            build-windows.log
+            *.log
+            packages/FFmpeg*/*.log
+            packages/FFmpeg*/ffbuild/*.log
+          if-no-files-found: ignore
 
   build-android:
     name: Build Android (arm64-v8a)
