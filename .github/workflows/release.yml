@@ -84,10 +84,16 @@ jobs:
 
       - name: Build FFmpeg
         run: |
-          set -e -o pipefail
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free 2>&1 | tee /tmp/build-macos.log
+          EXIT_CODE=${PIPESTATUS[0]}
           kill %1 2>/dev/null || true
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "=== MACOS BUILD FAILED (exit code $EXIT_CODE) ==="
+            echo "=== Last 300 lines of build output ==="
+            tail -n 300 /tmp/build-macos.log || true
+            exit 1
+          fi
 
       - name: Test FFmpeg
         run: |
@@ -144,6 +150,7 @@ jobs:
         with:
           name: build-logs-macos
           path: |
+            /tmp/build-macos.log
             *.log
             packages/FFmpeg*/*.log
             packages/FFmpeg*/ffbuild/*.log

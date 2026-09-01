@@ -553,6 +553,7 @@ def main():
     if updated_count > 0:
         script_path.write_text(content, encoding="utf-8")
         print(f"Updated {updated_count} library(ies) successfully.")
+        print("Updated build-ffmpeg successfully.")
     else:
         print("All versions are up to date.")
 

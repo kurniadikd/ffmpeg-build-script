@@ -27,7 +27,7 @@ jobs:
         run: |
           python check_updates.py > output.log
           cat output.log
-          if grep -q "Updated build-ffmpeg successfully" output.log; then
+          if grep -qE "Updated.*library.*successfully|Updated build-ffmpeg successfully" output.log; then
             echo "updated=true" >> $GITHUB_OUTPUT
           else
             echo "updated=false" >> $GITHUB_OUTPUT
