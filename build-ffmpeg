@@ -1604,7 +1604,7 @@ fi
 ## HWaccel library
 ##
 
-if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
+if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]] && [[ "$OSTYPE" != "msys" ]] && [[ "$OSTYPE" != "mingw"* ]] && [[ "$(uname -s 2>/dev/null)" != MINGW* ]] && [[ "$(uname -s 2>/dev/null)" != MSYS* ]]; then
   if build "vulkan-headers" "1.4.341.0"; then
     download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
@@ -1614,7 +1614,7 @@ if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]]; then
   fi
   CONFIGURE_OPTIONS+=("--enable-vulkan")
 
-  # vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
+  # vulkan filters and some encoders/decoders are implemented using shaders, for those we need a shader compiler
   if command_exists "python3"; then
     if build "glslang" "16.3.0"; then
       download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
