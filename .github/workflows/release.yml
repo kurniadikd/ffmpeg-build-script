@@ -56,7 +56,20 @@ jobs:
 
       - name: Test FFmpeg
         run: |
-          ./workspace/bin/ffmpeg -buildconf
+          echo "=== 1. Checking Version & Build Configuration ==="
+          ./workspace/bin/ffmpeg -version
+          ./workspace/bin/ffmpeg -codecs | grep -E "libx264|libx265|libsvtav1|libvpx|libdav1d|libopus|libfdk_aac"
+          
+          echo "=== 2. Synthetic Encoding Test (H.264 / AAC) ==="
+          ./workspace/bin/ffmpeg -y -f lavfi -i testsrc=duration=3:size=640x360:rate=30 -f lavfi -i sine=frequency=1000:duration=3 -c:v libx264 -preset ultrafast -c:a aac test_h264.mp4
+          
+          echo "=== 3. Synthetic Encoding Test (AV1 / Opus) ==="
+          ./workspace/bin/ffmpeg -y -f lavfi -i testsrc=duration=3:size=640x360:rate=30 -f lavfi -i sine=frequency=1000:duration=3 -c:v libsvtav1 -preset 8 -c:a libopus test_av1.mkv
+          
+          echo "=== 4. FFprobe Metadata Analysis Test ==="
+          ./workspace/bin/ffprobe -show_format -show_streams test_h264.mp4
+          ./workspace/bin/ffprobe -show_format -show_streams test_av1.mkv
+          echo "=== Linux FFmpeg Tests PASSED! ==="
 
       - name: Prepare release assets
         run: |
@@ -122,15 +135,22 @@ jobs:
 
       - name: Test FFmpeg
         run: |
-          echo "=== FFmpeg binary info ==="
+          echo "=== 1. Binary Architecture & Dependency Check ==="
           chmod +x workspace/bin/ffmpeg || true
-          file workspace/bin/ffmpeg || true
+          file workspace/bin/ffmpeg
           otool -L workspace/bin/ffmpeg 2>/dev/null | head -30 || true
-          echo "=== Running ffmpeg -version ==="
+          
+          echo "=== 2. Version & Codecs Check ==="
           export DYLD_LIBRARY_PATH="${PWD}/workspace/lib:${DYLD_LIBRARY_PATH:-}"
-          ./workspace/bin/ffmpeg -version || true
-          echo "=== Running ffmpeg -buildconf (info only) ==="
-          ./workspace/bin/ffmpeg -buildconf 2>/dev/null || true
+          ./workspace/bin/ffmpeg -version
+          ./workspace/bin/ffmpeg -codecs | grep -E "libx264|libx265|libsvtav1|libvpx|libdav1d|libopus"
+          
+          echo "=== 3. Synthetic Encoding Test (H.264 / AAC) ==="
+          ./workspace/bin/ffmpeg -y -f lavfi -i testsrc=duration=3:size=640x360:rate=30 -f lavfi -i sine=frequency=1000:duration=3 -c:v libx264 -preset ultrafast -c:a aac test_h264.mp4
+          
+          echo "=== 4. FFprobe Metadata Analysis Test ==="
+          ./workspace/bin/ffprobe -show_format -show_streams test_h264.mp4
+          echo "=== macOS FFmpeg Tests PASSED! ==="
 
       - name: Prepare release assets
         run: |
@@ -248,7 +268,20 @@ jobs:
 
       - name: Test FFmpeg
         run: |
-          ./workspace/bin/ffmpeg.exe -buildconf
+          echo "=== 1. Checking Version & Build Configuration ==="
+          ./workspace/bin/ffmpeg.exe -version
+          ./workspace/bin/ffmpeg.exe -codecs | grep -E "libx264|libx265|libsvtav1|libvpx|libdav1d|libopus"
+          
+          echo "=== 2. Synthetic Encoding Test (H.264 / AAC) ==="
+          ./workspace/bin/ffmpeg.exe -y -f lavfi -i testsrc=duration=3:size=640x360:rate=30 -f lavfi -i sine=frequency=1000:duration=3 -c:v libx264 -preset ultrafast -c:a aac test_h264.mp4
+          
+          echo "=== 3. Synthetic Encoding Test (AV1 / Opus) ==="
+          ./workspace/bin/ffmpeg.exe -y -f lavfi -i testsrc=duration=3:size=640x360:rate=30 -f lavfi -i sine=frequency=1000:duration=3 -c:v libsvtav1 -preset 8 -c:a libopus test_av1.mkv
+          
+          echo "=== 4. FFprobe Metadata Analysis Test ==="
+          ./workspace/bin/ffprobe.exe -show_format -show_streams test_h264.mp4
+          ./workspace/bin/ffprobe.exe -show_format -show_streams test_av1.mkv
+          echo "=== Windows FFmpeg Tests PASSED! ==="
 
       - name: Prepare release assets
         shell: msys2 {0}
@@ -326,23 +359,26 @@ jobs:
           fi
           kill %1 2>/dev/null || true
 
-      - name: Validate build output
+      - name: Validate and Test Android Build Output
         run: |
-          echo "=== Checking build output ==="
+          echo "=== 1. Checking Directory Structure & Files ==="
           ls -lah workspace/ || true
           ls -lah workspace/lib/ 2>/dev/null || true
           ls -lah workspace/bin/ 2>/dev/null || true
-          find workspace/ -type f | head -30 || true
+          
           if [ -f workspace/bin/ffmpeg ]; then
-            echo "=== Validating ARM64 ELF Architecture ==="
-            readelf -h workspace/bin/ffmpeg || true
-            echo "SUCCESS: workspace/bin/ffmpeg present!"
+            echo "=== 2. Validating ARM64 ELF Architecture ==="
+            readelf -h workspace/bin/ffmpeg
+            readelf -d workspace/bin/ffmpeg | head -20 || true
+            
+            echo "=== 3. Testing Android ARM64 Binary via QEMU User Emulation ==="
+            sudo apt-get install -y qemu-user-static
+            qemu-aarch64-static ./workspace/bin/ffmpeg -version
           elif [ -d workspace/lib ] && [ "$(ls -A workspace/lib)" ]; then
-            echo "SUCCESS: Found compiled libraries in workspace/lib/!"
-          else
-            echo "Searching for any .so or .a in packages/ or workspace/..."
-            find packages/ workspace/ -name "*.so" -o -name "*.a" | head -30 || true
+            echo "=== 2. Validating Compiled ARM64 Static/Shared Libraries ==="
+            find workspace/lib/ -type f \( -name "*.so" -o -name "*.a" \) -exec readelf -h {} + | head -30
           fi
+          echo "=== Android FFmpeg Verification PASSED! ==="
 
       - name: Prepare release assets
         run: |
