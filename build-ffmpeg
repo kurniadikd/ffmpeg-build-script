@@ -567,7 +567,7 @@ if build "yasm" "1.3.0"; then
   fi
 fi
 
-if build "nasm" "3.01"; then
+if build "nasm" "3.02"; then
   if command_exists "nasm"; then
     echo "Skipping nasm build (system provides it)"
     build_done "nasm" $CURRENT_PACKAGE_VERSION
@@ -680,7 +680,7 @@ if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
 fi
 
 if { ! command_exists "libtoolize" || ! libtoolize --version >/dev/null 2>&1; } && { ! command_exists "glibtoolize" || ! glibtoolize --version >/dev/null 2>&1; }; then
-  if build "libtool" "2.5.4"; then
+  if build "libtool" "2.6.2"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
       echo "Skipping libtool on Windows/macOS (system/Homebrew provides it natively)"
@@ -774,7 +774,7 @@ else
   fi
 fi
 
-if build "cmake" "4.3.4"; then
+if build "cmake" "4.4.3"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
   if command_exists "cmake" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
     echo "Skipping cmake build (system provides it)"
@@ -1131,7 +1131,7 @@ fi
 
 if $NONFREE_AND_GPL; then
   if [[ "$ANDROID_BUILD" != "true" ]]; then
-    if build "vid_stab" "1.1.1"; then
+    if build "vid_stab" "1.1.2"; then
       download "https://github.com/georgmartius/vid.stab/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
 
       if $MACOS_SILICON; then
@@ -1434,7 +1434,7 @@ fi
 ##
 
 if [[ "$ANDROID_BUILD" != "true" ]]; then
-  if build "libtiff" "4.7.1"; then
+  if build "libtiff" "4.7.2"; then
     download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
     execute make -j "$MJOBS"
@@ -1453,7 +1453,7 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
     build_done "lcms2" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "libjxl" "0.11.2"; then
+  if build "libjxl" "0.12.0"; then
     download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
   # currently needed to fix linking of static builds in non-C++ applications
     sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
@@ -1557,7 +1557,7 @@ if $NONFREE_AND_GPL; then
     CONFIGURE_OPTIONS+=("--enable-libsrt")
 
     if [[ "$OSTYPE" != "darwin"* ]]; then
-      if build "zvbi" "0.2.44"; then
+      if build "zvbi" "0.2.45"; then
         download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -1616,7 +1616,7 @@ if [[ "$ANDROID_BUILD" != "true" ]] && [[ "$OSTYPE" != "darwin"* ]] && [[ "$OSTY
 
   # vulkan filters and some encoders/decoders are implemented using shaders, for those we need a shader compiler
   if command_exists "python3"; then
-    if build "glslang" "16.3.0"; then
+    if build "glslang" "16.5.0"; then
       download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./update_glslang_sources.py
       execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
