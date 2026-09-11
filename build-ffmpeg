@@ -664,7 +664,7 @@ if ! command_exists "autoconf" || ! autoconf --version >/dev/null 2>&1; then
 fi
 
 if ! command_exists "automake" || ! automake --version >/dev/null 2>&1; then
-  if build "automake" "1.18.1"; then
+  if build "automake" "1.19"; then
     UNAME_S="$(uname -s 2>/dev/null || true)"
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
       echo "Skipping automake on Windows/macOS (system/Homebrew provides it natively)"
