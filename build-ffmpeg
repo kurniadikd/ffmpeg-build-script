@@ -1215,7 +1215,7 @@ if $NONFREE_AND_GPL; then
     fi
     CONFIGURE_OPTIONS+=("--enable-libzimg")
 
-    if build "libvmaf" "3.2.0"; then
+    if build "libvmaf" "3.2.1"; then
       download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
       cd "libvmaf" || exit
       execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dbuilt_in_models=true
