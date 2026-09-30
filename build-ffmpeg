@@ -736,7 +736,7 @@ if $NONFREE_AND_GPL; then
   fi
 
   if [[ "$ANDROID_BUILD" != "true" ]]; then
-    if build "openssl" "4.0.2"; then
+    if build "openssl" "4.0.3"; then
       download "https://github.com/openssl/openssl/releases/download/openssl-$CURRENT_PACKAGE_VERSION/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
       execute make -j "$MJOBS"
@@ -1681,7 +1681,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]] && [[ "$ANDROID_BUILD" != "true" ]]; then
     fi
   fi
 
-  if build "amf" "1.5.2"; then
+  if build "amf" "1.5.3"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
