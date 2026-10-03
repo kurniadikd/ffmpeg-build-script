@@ -774,7 +774,7 @@ else
   fi
 fi
 
-if build "cmake" "4.4.3"; then
+if build "cmake" "4.4.4"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
   if command_exists "cmake" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
     echo "Skipping cmake build (system provides it)"
