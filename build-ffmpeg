@@ -1059,7 +1059,7 @@ if [[ "$ANDROID_BUILD" != "true" ]] && ! $MACOS_SILICON && [[ "$ARCH" != "arm64"
 fi
 
 if [[ "$ANDROID_BUILD" != "true" ]]; then
-  if build "xeve" "0.7.0"; then
+  if build "xeve" "0.7.1"; then
     download "https://github.com/mpeg5/xeve/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "xeve-$CURRENT_PACKAGE_VERSION.tar.gz"
     make_dir build
     cd build || exit
@@ -1183,7 +1183,7 @@ if $NONFREE_AND_GPL; then
     fi
     CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
-    if build "av1" "3.15.1"; then
+    if build "av1" "3.15.2"; then
       download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir "$PACKAGES"/aom_build
       cd "$PACKAGES"/aom_build || exit
