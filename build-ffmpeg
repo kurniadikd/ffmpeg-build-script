@@ -1568,7 +1568,7 @@ if $NONFREE_AND_GPL; then
     CONFIGURE_OPTIONS+=("--enable-libsrt")
 
     if [[ "$OSTYPE" != "darwin"* ]]; then
-      if build "zvbi" "0.2.45"; then
+      if build "zvbi" "0.2.46"; then
         download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
