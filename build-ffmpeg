@@ -736,7 +736,7 @@ if $NONFREE_AND_GPL; then
   fi
 
   if [[ "$ANDROID_BUILD" != "true" ]]; then
-    if build "openssl" "4.0.3"; then
+    if build "openssl" "4.1.0"; then
       download "https://github.com/openssl/openssl/releases/download/openssl-$CURRENT_PACKAGE_VERSION/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
       execute make -j "$MJOBS"
