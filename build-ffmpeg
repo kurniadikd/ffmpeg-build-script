@@ -1183,7 +1183,7 @@ if $NONFREE_AND_GPL; then
     fi
     CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
-    if build "av1" "3.15.2"; then
+    if build "av1" "3.15.3"; then
       download "https://storage.googleapis.com/aom-releases/libaom-$CURRENT_PACKAGE_VERSION.tar.gz" "libaom-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir "$PACKAGES"/aom_build
       cd "$PACKAGES"/aom_build || exit
