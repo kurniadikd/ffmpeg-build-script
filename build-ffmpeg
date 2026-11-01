@@ -1456,7 +1456,7 @@ fi
 
 
 if [[ "$ANDROID_BUILD" != "true" ]]; then
-  if build "lcms2" "2.19.1"; then
+  if build "lcms2" "2.20"; then
     download "https://github.com/mm2/Little-CMS/releases/download/lcms$CURRENT_PACKAGE_VERSION/lcms2-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j "$MJOBS"
