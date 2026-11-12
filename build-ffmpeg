@@ -1464,7 +1464,7 @@ if [[ "$ANDROID_BUILD" != "true" ]]; then
     build_done "lcms2" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "libjxl" "0.12.0"; then
+  if build "libjxl" "0.13.0"; then
     download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
   # currently needed to fix linking of static builds in non-C++ applications
     sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
