@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=9.0.2
+FFMPEG_VERSION=9.1
 SCRIPT_VERSION=1.60
 
 CWD=$(pwd)
@@ -774,7 +774,7 @@ else
   fi
 fi
 
-if build "cmake" "4.5.0"; then
+if build "cmake" "4.5.1"; then
   UNAME_S="$(uname -s 2>/dev/null || true)"
   if command_exists "cmake" || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$UNAME_S" == MINGW* ]] || [[ "$UNAME_S" == MSYS* ]]; then
     echo "Skipping cmake build (system provides it)"
